@@ -18,7 +18,10 @@
 #ifndef MBUS_SERIAL_H
 #define MBUS_SERIAL_H
 
-#include <termios.h>
+#include <freertos/freeRTOS.h>
+#include <freertos/queue.h>
+#include <driver/uart.h>
+#include <stdint.h>
 #include "mbus-protocol-aux.h"
 #include "mbus-protocol.h"
 
@@ -29,15 +32,18 @@ extern "C" {
 
 typedef struct _mbus_serial_data
 {
-    char *device;
-    struct termios t;
+    uart_port_t port;
+    uart_config_t config;
+    uint8_t tx, rx, rts, cts;
+    uint32_t max_wait, idle_time;
+    QueueHandle_t queue;
 } mbus_serial_data;
 
-int  mbus_serial_connect(mbus_handle *handle);
-int  mbus_serial_disconnect(mbus_handle *handle);
-int  mbus_serial_send_frame(mbus_handle *handle, mbus_frame *frame);
-int  mbus_serial_recv_frame(mbus_handle *handle, mbus_frame *frame);
-int  mbus_serial_set_baudrate(mbus_handle *handle, long baudrate);
+uint32_t  mbus_serial_connect(mbus_handle *handle);
+uint32_t  mbus_serial_disconnect(mbus_handle *handle);
+uint32_t  mbus_serial_send_frame(mbus_handle *handle, mbus_frame *frame);
+uint32_t  mbus_serial_recv_frame(mbus_handle *handle, mbus_frame *frame);
+uint32_t  mbus_serial_set_baudrate(mbus_handle *handle, uint32_t baudrate);
 void mbus_serial_data_free(mbus_handle *handle);
 
 #ifdef __cplusplus

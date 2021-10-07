@@ -29,7 +29,7 @@
 #endif
 /*@end@*/
 
-static int debug = 0;
+static uint32_t debug = 0;
 
 typedef struct _mbus_variable_vif {
     unsigned     vif;
@@ -750,7 +750,7 @@ mbus_variable_vif fixed_table[] = {
 /// Register a function for receive events.
 //------------------------------------------------------------------------------
 void
-mbus_register_recv_event(mbus_handle * handle, void (*event)(unsigned char src_type, const char *buff, size_t len))
+mbus_register_recv_event(mbus_handle * handle, void (*event)(uint8_t src_type, const char *buff, size_t len))
 {
     handle->recv_event = event;
 }
@@ -759,7 +759,7 @@ mbus_register_recv_event(mbus_handle * handle, void (*event)(unsigned char src_t
 /// Register a function for send events.
 //------------------------------------------------------------------------------
 void
-mbus_register_send_event(mbus_handle * handle, void (*event)(unsigned char src_type, const char *buff, size_t len))
+mbus_register_send_event(mbus_handle * handle, void (*event)(uint8_t src_type, const char *buff, size_t len))
 {
     handle->send_event = event;
 }
@@ -782,7 +782,7 @@ mbus_register_found_event(mbus_handle * handle, void (*event)(mbus_handle * hand
     handle->found_event = event;
 }
 
-int mbus_fixed_normalize(int medium_unit, long medium_value, char **unit_out, double *value_out, char **quantity_out)
+uint32_t mbus_fixed_normalize(uint32_t medium_unit, long medium_value, char **unit_out, double *value_out, char **quantity_out)
 {
     medium_unit = medium_unit & 0x3F;
 
@@ -804,7 +804,7 @@ int mbus_fixed_normalize(int medium_unit, long medium_value, char **unit_out, do
             break;
 
     default:
-        for(int i=0; fixed_table[i].vif < 0xfff; ++i)
+        for(uint32_t i=0; fixed_table[i].vif < 0xfff; ++i)
         {
             if (fixed_table[i].vif == medium_unit)
             {
@@ -825,12 +825,12 @@ int mbus_fixed_normalize(int medium_unit, long medium_value, char **unit_out, do
 }
 
 
-int mbus_variable_value_decode(mbus_data_record *record, double *value_out_real, char **value_out_str, int *value_out_str_size)
+uint32_t mbus_variable_value_decode(mbus_data_record *record, double *value_out_real, char **value_out_str, uint32_t *value_out_str_size)
 {
-    int result = 0;
-    unsigned char vif, vife;
+    uint32_t result = 0;
+    uint8_t vif, vife;
     struct tm time;
-    int value_out_int;
+    uint32_t value_out_int;
     long long value_out_long_long;
     *value_out_real = 0.0;
     *value_out_str = NULL;
@@ -989,7 +989,7 @@ int mbus_variable_value_decode(mbus_data_record *record, double *value_out_real,
                         return -1;
                     }
                     *value_out_str_size = record->data_len;
-                    mbus_data_str_decode((unsigned char*)(*value_out_str), record->data, record->data_len);
+                    mbus_data_str_decode((uint8_t*)(*value_out_str), record->data, record->data_len);
                     result = 0;
                     break;
                 }
@@ -1010,7 +1010,7 @@ int mbus_variable_value_decode(mbus_data_record *record, double *value_out_real,
                     return -1;
                 }
                 *value_out_str_size = 3 * record->data_len;
-                mbus_data_bin_decode((unsigned char*)(*value_out_str), record->data, record->data_len, (3 * record->data_len + 1));
+                mbus_data_bin_decode((uint8_t*)(*value_out_str), record->data, record->data_len, (3 * record->data_len + 1));
                 result = 0;
                 break;
 
@@ -1029,10 +1029,10 @@ int mbus_variable_value_decode(mbus_data_record *record, double *value_out_real,
     return result;
 }
 
-int
-mbus_vif_unit_normalize(int vif, double value, char **unit_out, double *value_out, char **quantity_out)
+uint32_t
+mbus_vif_unit_normalize(uint32_t vif, double value, char **unit_out, double *value_out, char **quantity_out)
 {
-    int i;
+    uint32_t i;
     unsigned newVif = vif & 0xF7F; /* clear extension bit */
 
     MBUS_DEBUG("vif_unit_normalize = 0x%03X \n", vif);
@@ -1062,10 +1062,10 @@ mbus_vif_unit_normalize(int vif, double value, char **unit_out, double *value_ou
 }
 
 
-int
+uint32_t
 mbus_vib_unit_normalize(mbus_value_information_block *vib, double value, char **unit_out, double *value_out, char **quantity_out)
 {
-    int code;
+    uint32_t code;
 
     if (vib == NULL || unit_out == NULL || value_out == NULL || quantity_out == NULL)
     {
@@ -1216,7 +1216,7 @@ mbus_record_free(mbus_record * rec)
 
 
 mbus_record *
-mbus_parse_fixed_record(char status_byte, char medium_unit, unsigned char *data)
+mbus_parse_fixed_record(char status_byte, char medium_unit, uint8_t *data)
 {
     long value = 0;
     mbus_record * record = NULL;
@@ -1228,7 +1228,7 @@ mbus_parse_fixed_record(char status_byte, char medium_unit, unsigned char *data)
     }
 
     /* shared/static memory - get own copy */
-    record->function_medium = strdup(mbus_data_fixed_function((int)status_byte));  /* stored / actual */
+    record->function_medium = strdup(mbus_data_fixed_function((uint32_t)status_byte));  /* stored / actual */
 
     if (record->function_medium == NULL)
     {
@@ -1265,7 +1265,7 @@ mbus_parse_variable_record(mbus_data_record *data)
     mbus_record * record = NULL;
     double value_out_real    = 0.0;  /**< raw value */
     char * value_out_str     = NULL;
-    int    value_out_str_size = 0;
+    uint32_t    value_out_str_size = 0;
     double real_val         = 0.0;  /**< normalized value */
 
     if (data == NULL)
@@ -1490,7 +1490,7 @@ mbus_frame_data_xml_normalized(mbus_frame_data *data)
 }
 
 mbus_handle *
-mbus_context_serial(const char *device)
+mbus_context_serial(uart_port_t port, uint32_t baudrate, uint8_t rx, uint8_t tx, uint8_t rts, uint8_t cts)
 {
     mbus_handle *handle;
     mbus_serial_data *serial_data;
@@ -1525,14 +1525,17 @@ mbus_context_serial(const char *device)
     handle->scan_progress = NULL;
     handle->found_event = NULL;
 
-    if ((serial_data->device = strdup(device)) == NULL)
-    {
-        snprintf(error_str, sizeof(error_str), "%s: failed to allocate memory for device\n", __PRETTY_FUNCTION__);
-        mbus_error_str_set(error_str);
-        free(serial_data);
-        free(handle);
-        return NULL;
-    }
+    serial_data->tx = tx;
+    serial_data->rx = rx;
+    serial_data->rts = rts;
+    serial_data->cts = cts;
+    serial_data->port = port;
+    serial_data->config.baud_rate = baudrate;
+    serial_data->config.data_bits = UART_DATA_8_BITS;
+    serial_data->config.parity = UART_PARITY_ENABLE;
+    serial_data->config.stop_bits = UART_STOP_BITS_1;
+    serial_data->config.flow_ctrl = UART_HW_FLOWCTRL_CTS_RTS;   // TODO: What to use?
+    serial_data->config.rx_flow_ctrl_thresh = 122; // TODO: What to use?
 
     return handle;
 }
@@ -1553,7 +1556,7 @@ mbus_context_free(mbus_handle * handle)
     }
 }
 
-int
+uint32_t
 mbus_connect(mbus_handle * handle)
 {
     if (handle == NULL)
@@ -1565,7 +1568,7 @@ mbus_connect(mbus_handle * handle)
     return handle->open(handle);
 }
 
-int
+uint32_t
 mbus_disconnect(mbus_handle * handle)
 {
     if (handle == NULL)
@@ -1577,7 +1580,7 @@ mbus_disconnect(mbus_handle * handle)
     return handle->close(handle);
 }
 
-int
+uint32_t
 mbus_context_set_option(mbus_handle * handle, mbus_context_option option, long value)
 {
     if (handle == NULL)
@@ -1616,10 +1619,10 @@ mbus_context_set_option(mbus_handle * handle, mbus_context_option option, long v
     return -1; // unable to set option
 }
 
-int
+uint32_t
 mbus_recv_frame(mbus_handle * handle, mbus_frame *frame)
 {
-    int result = 0;
+    uint32_t result = 0;
 
     if (handle == NULL)
     {
@@ -1656,9 +1659,9 @@ mbus_recv_frame(mbus_handle * handle, mbus_frame *frame)
     return result;
 }
 
-int mbus_purge_frames(mbus_handle *handle)
+uint32_t mbus_purge_frames(mbus_handle *handle)
 {
-    int err, received;
+    uint32_t err, received;
     mbus_frame reply;
 
     memset((void *)&reply, 0, sizeof(mbus_frame));
@@ -1677,7 +1680,7 @@ int mbus_purge_frames(mbus_handle *handle)
     return received;
 }
 
-int
+uint32_t
 mbus_send_frame(mbus_handle * handle, mbus_frame *frame)
 {
     if (handle == NULL)
@@ -1694,7 +1697,7 @@ mbus_send_frame(mbus_handle * handle, mbus_frame *frame)
 // a slave to be the active secondary addressed slave if the secondary address
 // matches that of the slave.
 //------------------------------------------------------------------------------
-int
+uint32_t
 mbus_send_select_frame(mbus_handle * handle, const char *secondary_addr_str)
 {
     mbus_frame *frame;
@@ -1723,11 +1726,11 @@ mbus_send_select_frame(mbus_handle * handle, const char *secondary_addr_str)
 // send a user data packet from master to slave: the packet let the
 // adressed slave(s) switch to the given baudrate
 //------------------------------------------------------------------------------
-int
-mbus_send_switch_baudrate_frame(mbus_handle * handle, int address, long baudrate)
+uint32_t
+mbus_send_switch_baudrate_frame(mbus_handle * handle, uint32_t address, long baudrate)
 {
-    int retval = 0;
-    int control_information = 0;
+    uint32_t retval = 0;
+    uint32_t control_information = 0;
     mbus_frame *frame;
 
     if (mbus_is_primary_address(address) == 0)
@@ -1793,10 +1796,10 @@ mbus_send_switch_baudrate_frame(mbus_handle * handle, int address, long baudrate
 // send a user data packet from master to slave: the packet resets
 // the application layer in the slave
 //------------------------------------------------------------------------------
-int
-mbus_send_application_reset_frame(mbus_handle * handle, int address, int subcode)
+uint32_t
+mbus_send_application_reset_frame(mbus_handle * handle, uint32_t address, uint32_t subcode)
 {
-    int retval = 0;
+    uint32_t retval = 0;
     mbus_frame *frame;
 
     if (mbus_is_primary_address(address) == 0)
@@ -1847,10 +1850,10 @@ mbus_send_application_reset_frame(mbus_handle * handle, int address, int subcode
 //------------------------------------------------------------------------------
 // send a request packet to from master to slave
 //------------------------------------------------------------------------------
-int
-mbus_send_request_frame(mbus_handle * handle, int address)
+uint32_t
+mbus_send_request_frame(mbus_handle * handle, uint32_t address)
 {
-    int retval = 0;
+    uint32_t retval = 0;
     mbus_frame *frame;
 
     if (mbus_is_primary_address(address) == 0)
@@ -1883,10 +1886,10 @@ mbus_send_request_frame(mbus_handle * handle, int address)
 //------------------------------------------------------------------------------
 // send a user data packet from master to slave
 //------------------------------------------------------------------------------
-int
-mbus_send_user_data_frame(mbus_handle * handle, int address, const unsigned char *data, size_t data_size)
+uint32_t
+mbus_send_user_data_frame(mbus_handle * handle, uint32_t address, const uint8_t *data, size_t data_size)
 {
-    int retval = 0;
+    uint32_t retval = 0;
     mbus_frame *frame;
 
     if (mbus_is_primary_address(address) == 0)
@@ -1934,11 +1937,11 @@ mbus_send_user_data_frame(mbus_handle * handle, int address, const unsigned char
 //------------------------------------------------------------------------------
 // send a request from master to slave in order to change the primary address
 //------------------------------------------------------------------------------
-int
-mbus_set_primary_address(mbus_handle * handle, int old_address, int new_address)
+uint32_t
+mbus_set_primary_address(mbus_handle * handle, uint32_t old_address, uint32_t new_address)
 {
     /* primary address record, see chapter 6.4.2 */
-    unsigned char buffer[3] = { 0x01, 0x7A, new_address };
+    uint8_t buffer[3] = { 0x01, 0x7A, new_address };
 
     if (mbus_is_primary_address(new_address) == 0)
     {
@@ -1962,13 +1965,13 @@ mbus_set_primary_address(mbus_handle * handle, int old_address, int new_address)
 // send a request from master to slave and collect the reply (replies)
 // from the slave.
 //------------------------------------------------------------------------------
-int
-mbus_sendrecv_request(mbus_handle *handle, int address, mbus_frame *reply, int max_frames)
+uint32_t
+mbus_sendrecv_request(mbus_handle *handle, uint32_t address, mbus_frame *reply, uint32_t max_frames)
 {
-    int retval = 0, more_frames = 1, retry = 0;
+    uint32_t retval = 0, more_frames = 1, retry = 0;
     mbus_frame_data reply_data;
     mbus_frame *frame, *next_frame;
-    int frame_count = 0, result;
+    uint32_t frame_count = 0, result;
 
     if (handle == NULL)
     {
@@ -2127,10 +2130,10 @@ mbus_sendrecv_request(mbus_handle *handle, int address, mbus_frame *reply, int m
 //------------------------------------------------------------------------------
 // send a data request packet to from master to slave and optional purge response
 //------------------------------------------------------------------------------
-int
-mbus_send_ping_frame(mbus_handle *handle, int address, char purge_response)
+uint32_t
+mbus_send_ping_frame(mbus_handle *handle, uint32_t address, char purge_response)
 {
-    int retval = 0;
+    uint32_t retval = 0;
     mbus_frame *frame;
 
     if (mbus_is_primary_address(address) == 0)
@@ -2169,10 +2172,10 @@ mbus_send_ping_frame(mbus_handle *handle, int address, char purge_response)
 //------------------------------------------------------------------------------
 // Select a device using the supplied secondary address  (mask).
 //------------------------------------------------------------------------------
-int
+uint32_t
 mbus_select_secondary_address(mbus_handle * handle, const char *mask)
 {
-    int ret;
+    uint32_t ret;
     mbus_frame reply;
 
     if (mask == NULL || strlen(mask) != 16)
@@ -2225,10 +2228,10 @@ mbus_select_secondary_address(mbus_handle * handle, const char *mask)
 // Probe for the presence of a device(s) using the supplied secondary address
 // (mask).
 //------------------------------------------------------------------------------
-int
+uint32_t
 mbus_probe_secondary_address(mbus_handle *handle, const char *mask, char *matching_addr)
 {
-    int ret, i;
+    uint32_t ret, i;
     mbus_frame reply;
 
     if (mask == NULL || matching_addr == NULL || strlen(mask) != 16)
@@ -2313,7 +2316,7 @@ mbus_probe_secondary_address(mbus_handle *handle, const char *mask, char *matchi
 }
 
 
-int mbus_read_slave(mbus_handle * handle, mbus_address *address, mbus_frame * reply)
+uint32_t mbus_read_slave(mbus_handle * handle, mbus_address *address, mbus_frame * reply)
 {
     if (handle == NULL || address == NULL)
     {
@@ -2333,7 +2336,7 @@ int mbus_read_slave(mbus_handle * handle, mbus_address *address, mbus_frame * re
     else
     {
         /* secondary addressing */
-        int probe_ret;
+        uint32_t probe_ret;
 
         if (address->secondary == NULL)
         {
@@ -2388,10 +2391,10 @@ int mbus_read_slave(mbus_handle * handle, mbus_address *address, mbus_frame * re
 //------------------------------------------------------------------------------
 // Iterate over all address masks according to the M-Bus probe algorithm.
 //------------------------------------------------------------------------------
-int
-mbus_scan_2nd_address_range(mbus_handle * handle, int pos, char *addr_mask)
+uint32_t
+mbus_scan_2nd_address_range(mbus_handle * handle, uint32_t pos, char *addr_mask)
 {
-    int i, i_start, i_end, probe_ret;
+    uint32_t i, i_start, i_end, probe_ret;
     char *mask, matching_mask[17];
 
     if (handle == NULL || addr_mask == NULL)
@@ -2433,8 +2436,8 @@ mbus_scan_2nd_address_range(mbus_handle * handle, int pos, char *addr_mask)
         else
         {
             // .. except if we're at the last pos (==15) and this isn't a wildcard we still need to send the probe
-            i_start = (int)(mask[pos] - '0');
-            i_end   = (int)(mask[pos] - '0');
+            i_start = (uint32_t)(mask[pos] - '0');
+            i_end   = (uint32_t)(mask[pos] - '0');
         }
     }
 
@@ -2484,11 +2487,11 @@ mbus_scan_2nd_address_range(mbus_handle * handle, int pos, char *addr_mask)
 // - whitespaces will be ignored
 //------------------------------------------------------------------------------
 size_t
-mbus_hex2bin(unsigned char * dst, size_t dst_len, const unsigned char * src, size_t src_len)
+mbus_hex2bin(uint8_t * dst, size_t dst_len, const uint8_t * src, size_t src_len)
 {
     size_t i, result = 0;
     unsigned long val;
-    unsigned char *ptr, *end, buf[3];
+    uint8_t *ptr, *end, buf[3];
 
     if (!src || !dst)
     {
@@ -2519,7 +2522,7 @@ mbus_hex2bin(unsigned char * dst, size_t dst_len, const unsigned char * src, siz
         if (result >= dst_len)
             break;
 
-        dst[result++] = (unsigned char) val;
+        dst[result++] = (uint8_t) val;
     }
 
     return result;

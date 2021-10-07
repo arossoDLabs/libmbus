@@ -17,7 +17,6 @@
 #include <stdio.h>
 #include <strings.h>
 
-#include <termios.h>
 #include <errno.h>
 #include <string.h>
 
@@ -26,22 +25,22 @@
 #include "mbus-protocol.h"
 
 #define PACKET_BUFF_SIZE 2048
+#define TX_PACKET_BUFF_SIZE 0
+#define RX_PACKET_BUFF_SIZE 2048
 
 //------------------------------------------------------------------------------
 /// Set up a serial connection handle.
 //------------------------------------------------------------------------------
-int
+uint32_t
 mbus_serial_connect(mbus_handle *handle)
 {
     mbus_serial_data *serial_data;
-    const char *device;
-    struct termios *term;
-
+    
     if (handle == NULL)
         return -1;
 
     serial_data = (mbus_serial_data *) handle->auxdata;
-    if (serial_data == NULL || serial_data->device == NULL)
+    if (serial_data == NULL || serial_data->port == NULL)
         return -1;
 
     device = serial_data->device;
@@ -50,23 +49,15 @@ mbus_serial_connect(mbus_handle *handle)
     // create the SERIAL connection
     //
 
-    // Use blocking read and handle it by serial port VMIN/VTIME setting
-    if ((handle->fd = open(device, O_RDWR | O_NOCTTY)) < 0)
-    {
-        fprintf(stderr, "%s: failed to open tty.", __PRETTY_FUNCTION__);
-        return -1;
-    }
+    // Set config
+    ESP_ERROR_CHECK(uart_param_config(serial_data->port, &(serial_data->config)));
+    // Set pins
+    ESP_ERROR_CHECK(uart_set_pin(serial_data->port, serial_data->tx, serial_data->rx, serial_data->rts, serial_data->cts));
+    // Install driver
+    ESP_ERROR_CHECK(uart_driver_install(serial_data->port, RX_PACKET_BUFF_SIZE, TX_PACKET_BUFF_SIZE, 10, &(serial_data->queue), 0));
 
-    memset(term, 0, sizeof(*term));
-    term->c_cflag |= (CS8|CREAD|CLOCAL);
-    term->c_cflag |= PARENB;
-
-    // No received data still OK
-    term->c_cc[VMIN] = (cc_t) 0;
-
-    // Wait at most 0.2 sec.Note that it starts after first received byte!!
-    // I.e. if CMIN>0 and there are no data we would still wait forever...
-    //
+    
+    // TODO: TO HANDLE THE COMMENT BELOW
     // The specification mentions link layer response timeout this way:
     // The time structure of various link layer communication types is described in EN60870-5-1. The answer time
     // between the end of a master send telegram and the beginning of the response telegram of the slave shall be
@@ -78,10 +69,8 @@ mbus_serial_connect(mbus_handle *handle)
     // For 2400Bd this means (330 + 11) / 2400 + 0.15 = 292 ms (added 11 bit periods to receive first byte).
     // I.e. timeout of 0.3s seems appropriate for 2400Bd.
 
-    term->c_cc[VTIME] = (cc_t) 3; // Timeout in 1/10 sec
-
-    cfsetispeed(term, B2400);
-    cfsetospeed(term, B2400);
+    serial_data->idle_time = pdMS_TO_TICKS((uint32_t) (((double) (33.0/((double)serial_port->config.baudrate)))*1000.0));
+    serial_data->max_wait = pdMS_TO_TICKS((uint32_t) ((((double) (330.0/((double)serial_port->config.baudrate)))*1000.0) + 50.0));
 
 #ifdef MBUS_SERIAL_DEBUG
     printf("%s: t.c_cflag = %x\n", __PRETTY_FUNCTION__, term->c_cflag);
@@ -90,18 +79,15 @@ mbus_serial_connect(mbus_handle *handle)
     printf("%s: t.c_lflag = %x\n", __PRETTY_FUNCTION__, term->c_lflag);
 #endif
 
-    tcsetattr(handle->fd, TCSANOW, term);
-
     return 0;
 }
 
 //------------------------------------------------------------------------------
 // Set baud rate for serial connection
 //------------------------------------------------------------------------------
-int
-mbus_serial_set_baudrate(mbus_handle *handle, long baudrate)
+uint32_t
+mbus_serial_set_baudrate(mbus_handle *handle, uint32_t baudrate)
 {
-    speed_t speed;
     mbus_serial_data *serial_data;
 
     if (handle == NULL)
@@ -112,70 +98,12 @@ mbus_serial_set_baudrate(mbus_handle *handle, long baudrate)
     if (serial_data == NULL)
         return -1;
 
-    switch (baudrate)
-    {
-        case 300:
-            speed = B300;
-            serial_data->t.c_cc[VTIME] = (cc_t) 13; // Timeout in 1/10 sec
-            break;
-
-        case 600:
-            speed = B600;
-            serial_data->t.c_cc[VTIME] = (cc_t) 8;  // Timeout in 1/10 sec
-            break;
-
-        case 1200:
-            speed = B1200;
-            serial_data->t.c_cc[VTIME] = (cc_t) 5;  // Timeout in 1/10 sec
-            break;
-
-        case 2400:
-            speed = B2400;
-            serial_data->t.c_cc[VTIME] = (cc_t) 3;  // Timeout in 1/10 sec
-            break;
-
-        case 4800:
-            speed = B4800;
-            serial_data->t.c_cc[VTIME] = (cc_t) 3;  // Timeout in 1/10 sec
-            break;
-
-        case 9600:
-            speed = B9600;
-            serial_data->t.c_cc[VTIME] = (cc_t) 2;  // Timeout in 1/10 sec
-            break;
-
-        case 19200:
-            speed = B19200;
-            serial_data->t.c_cc[VTIME] = (cc_t) 2;  // Timeout in 1/10 sec
-            break;
-
-        case 38400:
-            speed = B38400;
-            serial_data->t.c_cc[VTIME] = (cc_t) 2;  // Timeout in 1/10 sec
-            break;
-
-       default:
-            return -1; // unsupported baudrate
-    }
-
-    // Set input baud rate
-    if (cfsetispeed(&(serial_data->t), speed) != 0)
+    if (uart_set_baudrate(serial_data->port, baudrate) != ESP_OK)
     {
         return -1;
     }
 
-    // Set output baud rate
-    if (cfsetospeed(&(serial_data->t), speed) != 0)
-    {
-        return -1;
-    }
-
-    // Change baud rate immediately
-    if (tcsetattr(handle->fd, TCSANOW, &(serial_data->t)) != 0)
-    {
-        return -1;
-    }
-
+    serial_data->config.baud_rate = baudrate;
     return 0;
 }
 
@@ -183,21 +111,25 @@ mbus_serial_set_baudrate(mbus_handle *handle, long baudrate)
 //------------------------------------------------------------------------------
 //
 //------------------------------------------------------------------------------
-int
+uint32_t
 mbus_serial_disconnect(mbus_handle *handle)
 {
-    if (handle == NULL)
-    {
-        return -1;
-    }
+    mbus_serial_data *serial_data;
 
-    if (handle->fd < 0)
+    if (handle == NULL)
+        return -1;
+
+    serial_data = (mbus_serial_data *) handle->auxdata;
+
+    if (serial_data == NULL)
+        return -1;
+
+    if (!uart_is_driver_installed(serial_data->port))
     {
        return -1;
     }
 
-    close(handle->fd);
-    handle->fd = -1;
+    uart_driver_delete(serial_data->port);
 
     return 0;
 }
@@ -215,8 +147,6 @@ mbus_serial_data_free(mbus_handle *handle)
         {
             return;
         }
-
-        free(serial_data->device);
         free(serial_data);
         handle->auxdata = NULL;
     }
@@ -225,21 +155,25 @@ mbus_serial_data_free(mbus_handle *handle)
 //------------------------------------------------------------------------------
 //
 //------------------------------------------------------------------------------
-int
+uint32_t
 mbus_serial_send_frame(mbus_handle *handle, mbus_frame *frame)
 {
-    unsigned char buff[PACKET_BUFF_SIZE];
-    int len, ret;
+    uint8_t buff[PACKET_BUFF_SIZE];
+    uint32_t len, ret;
+    mbus_serial_data *serial_data;
 
     if (handle == NULL || frame == NULL)
-    {
         return -1;
-    }
+
+    serial_data = (mbus_serial_data *) handle->auxdata;
+
+    if (serial_data == NULL)
+        return -1;
 
     // Make sure serial connection is open
-    if (isatty(handle->fd) == 0)
+    if (!uart_is_driver_installed(serial_data->port))
     {
-        return -1;
+       return -1;
     }
 
     if ((len = mbus_frame_pack(frame, buff, sizeof(buff))) == -1)
@@ -251,7 +185,7 @@ mbus_serial_send_frame(mbus_handle *handle, mbus_frame *frame)
 #ifdef MBUS_SERIAL_DEBUG
     // if debug, dump in HEX form to stdout what we write to the serial port
     printf("%s: Dumping M-Bus frame [%d bytes]: ", __PRETTY_FUNCTION__, len);
-    int i;
+    uint32_t i;
     for (i = 0; i < len; i++)
     {
        printf("%.2X ", buff[i]);
@@ -259,7 +193,7 @@ mbus_serial_send_frame(mbus_handle *handle, mbus_frame *frame)
     printf("\n");
 #endif
 
-    if ((ret = write(handle->fd, buff, len)) == len)
+    if ((ret = uart_write_bytes(serial_data->port, buff, len)) == len)
     {
         //
         // call the send event function, if the callback function is registered
@@ -273,35 +207,35 @@ mbus_serial_send_frame(mbus_handle *handle, mbus_frame *frame)
         return -1;
     }
 
-    //
-    // wait until complete frame has been transmitted
-    //
-    tcdrain(handle->fd);
-
     return 0;
 }
 
 //------------------------------------------------------------------------------
 //
 //------------------------------------------------------------------------------
-int
+uint32_t
 mbus_serial_recv_frame(mbus_handle *handle, mbus_frame *frame)
 {
     char buff[PACKET_BUFF_SIZE];
-    int remaining, timeouts;
+    uint32_t remaining, timeouts;
     ssize_t len, nread;
+    mbus_serial_data *serial_data;
 
     if (handle == NULL || frame == NULL)
     {
         fprintf(stderr, "%s: Invalid parameter.\n", __PRETTY_FUNCTION__);
         return MBUS_RECV_RESULT_ERROR;
     }
+    serial_data = (mbus_serial_data *) handle->auxdata;
+
+    if (serial_data == NULL)
+        return -1;
 
     // Make sure serial connection is open
-    if (isatty(handle->fd) == 0)
+    if (!uart_is_driver_installed(serial_data->port))
     {
         fprintf(stderr, "%s: Serial connection is not available.\n", __PRETTY_FUNCTION__);
-        return MBUS_RECV_RESULT_ERROR;
+        return -1;
     }
 
     memset((void *)buff, 0, sizeof(buff));
@@ -312,7 +246,6 @@ mbus_serial_recv_frame(mbus_handle *handle, mbus_frame *frame)
     remaining = 1; // start by reading 1 byte
     len = 0;
     timeouts = 0;
-
     do {
         if (len + remaining > PACKET_BUFF_SIZE)
         {
@@ -322,7 +255,7 @@ mbus_serial_recv_frame(mbus_handle *handle, mbus_frame *frame)
 
         //printf("%s: Attempt to read %d bytes [len = %d]\n", __PRETTY_FUNCTION__, remaining, len);
 
-        if ((nread = read(handle->fd, &buff[len], remaining)) == -1)
+        if ((nread = uart_read_bytes(serial_data->port, &buff[len], remaining, pdMS_TO_TICKS(serial_port->max_wait))) == -1)
         {
        //     fprintf(stderr, "%s: aborting recv frame (remaining = %d, len = %d, nread = %d)\n",
          //          __PRETTY_FUNCTION__, remaining, len, nread);
@@ -334,11 +267,12 @@ mbus_serial_recv_frame(mbus_handle *handle, mbus_frame *frame)
         if (nread == 0)
         {
             timeouts++;
-
             if (timeouts >= 3)
             {
                 // abort to avoid endless loop
                 fprintf(stderr, "%s: Timeout\n", __PRETTY_FUNCTION__);
+                // Insert idle time
+                vTaskDelay(pdMS_TO_TICKS(serial_port->idle_time));
                 break;
             }
         }
