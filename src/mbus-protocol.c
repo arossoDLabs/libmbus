@@ -15,7 +15,7 @@
 
 #include "mbus-protocol.h"
 
-static uint32_t parse_debug = 0, debug = 0;
+static int parse_debug = 0, debug = 0;
 static char error_str[512];
 
 #define NITEMS(x) (sizeof(x)/sizeof(x[0]))
@@ -24,10 +24,10 @@ static char error_str[512];
 // Returns the manufacturer ID according to the manufacturer's 3 byte ASCII code
 // or zero when there was an error.
 //------------------------------------------------------------------------------
-unsigned uint32_t
+unsigned int
 mbus_manufacturer_id(char *manufacturer)
 {
-    unsigned uint32_t id;
+    unsigned int id;
 
     /*
      * manufacturer must consist of at least 3 alphabetic characters,
@@ -64,13 +64,13 @@ static mbus_slave_data slave_data[MBUS_MAX_PRIMARY_SLAVES];
 //  trace callbacks
 //
 void
-mbus_dump_recv_event(uint8_t src_type, const char *buff, size_t len)
+mbus_dump_recv_event(unsigned char src_type, const char *buff, size_t len)
 {
     mbus_hex_dump("RECV", buff, len);
 }
 
 void
-mbus_dump_send_event(uint8_t src_type, const char *buff, size_t len)
+mbus_dump_send_event(unsigned char src_type, const char *buff, size_t len)
 {
     mbus_hex_dump("SEND", buff, len);
 }
@@ -125,7 +125,7 @@ mbus_slave_data_get(size_t i)
 /// frame type is requested.
 //------------------------------------------------------------------------------
 mbus_frame *
-mbus_frame_new(uint32_t frame_type)
+mbus_frame_new(int frame_type)
 {
     mbus_frame *frame = NULL;
 
@@ -175,7 +175,7 @@ mbus_frame_new(uint32_t frame_type)
 //------------------------------------------------------------------------------
 /// Free the memory resources allocated for the M-Bus frame data structure.
 //------------------------------------------------------------------------------
-uint32_t
+int
 mbus_frame_free(mbus_frame *frame)
 {
     if (frame)
@@ -192,11 +192,11 @@ mbus_frame_free(mbus_frame *frame)
 //------------------------------------------------------------------------------
 /// Caclulate the checksum of the M-Bus frame. Internal.
 //------------------------------------------------------------------------------
-uint8_t
+unsigned char
 calc_checksum(mbus_frame *frame)
 {
     size_t i;
-    uint8_t cksum;
+    unsigned char cksum;
 
     assert(frame != NULL);
     switch(frame->type)
@@ -242,7 +242,7 @@ calc_checksum(mbus_frame *frame)
 /// arithmetic sum of the frame content, without using carry. Which content
 /// that is included in the checksum calculation depends on the frame type.
 //------------------------------------------------------------------------------
-uint32_t
+int
 mbus_frame_calc_checksum(mbus_frame *frame)
 {
     if (frame)
@@ -268,7 +268,7 @@ mbus_frame_calc_checksum(mbus_frame *frame)
 ///
 /// Calculate the values of the lengths fields in the M-Bus frame. Internal.
 ///
-uint8_t
+unsigned char
 calc_length(const mbus_frame *frame)
 {
     assert(frame != NULL);
@@ -286,7 +286,7 @@ calc_length(const mbus_frame *frame)
 //------------------------------------------------------------------------------
 /// Calculate the values of the lengths fields in the M-Bus frame.
 //------------------------------------------------------------------------------
-uint32_t
+int
 mbus_frame_calc_length(mbus_frame *frame)
 {
     if (frame)
@@ -300,7 +300,7 @@ mbus_frame_calc_length(mbus_frame *frame)
 //------------------------------------------------------------------------------
 /// Return the M-Bus frame type
 //------------------------------------------------------------------------------
-uint32_t
+int
 mbus_frame_type(mbus_frame *frame)
 {
     if (frame)
@@ -313,7 +313,7 @@ mbus_frame_type(mbus_frame *frame)
 //------------------------------------------------------------------------------
 /// Return the M-Bus frame direction
 //------------------------------------------------------------------------------
-uint32_t
+int
 mbus_frame_direction(mbus_frame *frame)
 {
     if (frame)
@@ -342,10 +342,10 @@ mbus_frame_direction(mbus_frame *frame)
 // 5) checksum
 //
 //------------------------------------------------------------------------------
-uint32_t
+int
 mbus_frame_verify(mbus_frame *frame)
 {
-    uint8_t checksum;
+    unsigned char checksum;
 
     if (frame)
     {
@@ -455,10 +455,10 @@ mbus_frame_verify(mbus_frame *frame)
 /// Encode BCD data
 ///
 //------------------------------------------------------------------------------
-uint32_t
-mbus_data_bcd_encode(uint8_t *bcd_data, size_t bcd_data_size, uint32_t value)
+int
+mbus_data_bcd_encode(unsigned char *bcd_data, size_t bcd_data_size, int value)
 {
-    uint32_t v0, v1, v2, x1, x2;
+    int v0, v1, v2, x1, x2;
     size_t i;
 
     if (bcd_data && bcd_data_size)
@@ -468,8 +468,8 @@ mbus_data_bcd_encode(uint8_t *bcd_data, size_t bcd_data_size, uint32_t value)
         for (i = 0; i < bcd_data_size; i++)
         {
             v0 = v2;
-            v1 = (uint32_t)(v0 / 10);
-            v2 = (uint32_t)(v1 / 10);
+            v1 = (int)(v0 / 10);
+            v2 = (int)(v1 / 10);
 
             x1 = v0 - v1 * 10;
             x2 = v1 - v2 * 10;
@@ -494,7 +494,7 @@ mbus_data_bcd_encode(uint8_t *bcd_data, size_t bcd_data_size, uint32_t value)
 ///
 //------------------------------------------------------------------------------
 long long
-mbus_data_bcd_decode(uint8_t *bcd_data, size_t bcd_data_size)
+mbus_data_bcd_decode(unsigned char *bcd_data, size_t bcd_data_size)
 {
     long long val = 0;
     size_t i;
@@ -531,7 +531,7 @@ mbus_data_bcd_decode(uint8_t *bcd_data, size_t bcd_data_size)
 ///
 //------------------------------------------------------------------------------
 long long
-mbus_data_bcd_decode_hex(uint8_t *bcd_data, size_t bcd_data_size)
+mbus_data_bcd_decode_hex(unsigned char *bcd_data, size_t bcd_data_size)
 {
     long long val = 0;
     size_t i;
@@ -554,11 +554,11 @@ mbus_data_bcd_decode_hex(uint8_t *bcd_data, size_t bcd_data_size)
 /// Decode INTEGER data
 ///
 //------------------------------------------------------------------------------
-uint32_t
-mbus_data_int_decode(uint8_t *int_data, size_t int_data_size, uint32_t *value)
+int
+mbus_data_int_decode(unsigned char *int_data, size_t int_data_size, int *value)
 {
     size_t i;
-    uint32_t neg;
+    int neg;
     *value = 0;
 
     if (!int_data || (int_data_size < 1))
@@ -588,11 +588,11 @@ mbus_data_int_decode(uint8_t *int_data, size_t int_data_size, uint32_t *value)
     return 0;
 }
 
-uint32_t
-mbus_data_long_decode(uint8_t *int_data, size_t int_data_size, long *value)
+int
+mbus_data_long_decode(unsigned char *int_data, size_t int_data_size, long *value)
 {
     size_t i;
-    uint32_t neg;
+    int neg;
     *value = 0;
 
     if (!int_data || (int_data_size < 1))
@@ -622,11 +622,11 @@ mbus_data_long_decode(uint8_t *int_data, size_t int_data_size, long *value)
     return 0;
 }
 
-uint32_t
-mbus_data_long_long_decode(uint8_t *int_data, size_t int_data_size, long long *value)
+int
+mbus_data_long_long_decode(unsigned char *int_data, size_t int_data_size, long long *value)
 {
     size_t i;
-    uint32_t neg;
+    int neg;
     *value = 0;
 
     if (!int_data || (int_data_size < 1))
@@ -661,10 +661,10 @@ mbus_data_long_long_decode(uint8_t *int_data, size_t int_data_size, long long *v
 /// Encode INTEGER data (into 'int_data_size' bytes)
 ///
 //------------------------------------------------------------------------------
-uint32_t
-mbus_data_int_encode(uint8_t *int_data, size_t int_data_size, uint32_t value)
+int
+mbus_data_int_encode(unsigned char *int_data, size_t int_data_size, int value)
 {
-    uint32_t i;
+    int i;
 
     if (int_data)
     {
@@ -687,12 +687,12 @@ mbus_data_int_encode(uint8_t *int_data, size_t int_data_size, uint32_t value)
 ///
 //------------------------------------------------------------------------------
 float
-mbus_data_float_decode(uint8_t *float_data)
+mbus_data_float_decode(unsigned char *float_data)
 {
 #ifdef _HAS_NON_IEEE754_FLOAT
     float val = 0.0f;
     long temp = 0, fraction;
-    uint32_t sign,exponent;
+    int sign,exponent;
     size_t i;
 
     if (float_data)
@@ -744,7 +744,7 @@ mbus_data_float_decode(uint8_t *float_data)
 ///
 //------------------------------------------------------------------------------
 void
-mbus_data_str_decode(uint8_t *dst, const uint8_t *src, size_t len)
+mbus_data_str_decode(unsigned char *dst, const unsigned char *src, size_t len)
 {
     size_t i;
 
@@ -765,7 +765,7 @@ mbus_data_str_decode(uint8_t *dst, const uint8_t *src, size_t len)
 ///
 //------------------------------------------------------------------------------
 void
-mbus_data_bin_decode(uint8_t *dst, const uint8_t *src, size_t len, size_t max_len)
+mbus_data_bin_decode(unsigned char *dst, const unsigned char *src, size_t len, size_t max_len)
 {
     size_t i, pos;
 
@@ -775,7 +775,7 @@ mbus_data_bin_decode(uint8_t *dst, const uint8_t *src, size_t len, size_t max_le
     if (src && dst)
     {
         while((i < len) && ((pos+3) < max_len)) {
-            pos += snprintf(&dst[pos], max_len - pos, "%.2X ", src[i]);
+            pos += snprintf((char *) &dst[pos], max_len - pos, "%.2X ", src[i]);
             i++;
         }
 
@@ -803,7 +803,7 @@ mbus_data_bin_decode(uint8_t *dst, const uint8_t *src, size_t len, size_t max_le
 ///
 //------------------------------------------------------------------------------
 void
-mbus_data_tm_decode(struct tm *t, uint8_t *t_data, size_t t_data_size)
+mbus_data_tm_decode(struct tm *t, unsigned char *t_data, size_t t_data_size)
 {
     if (t == NULL)
     {
@@ -864,17 +864,17 @@ mbus_data_tm_decode(struct tm *t, uint8_t *t_data, size_t t_data_size)
 /// Generate manufacturer code from 2-byte encoded data
 ///
 //------------------------------------------------------------------------------
-uint32_t
-mbus_data_manufacturer_encode(uint8_t *m_data, uint8_t *m_code)
+int
+mbus_data_manufacturer_encode(unsigned char *m_data, unsigned char *m_code)
 {
-    uint32_t m_val;
+    int m_val;
 
     if (m_data == NULL || m_code == NULL)
         return -1;
 
-    m_val = ((((uint32_t)m_code[0] - 64) & 0x001F) << 10) +
-            ((((uint32_t)m_code[1] - 64) & 0x001F) << 5) +
-            ((((uint32_t)m_code[2] - 64) & 0x001F));
+    m_val = ((((int)m_code[0] - 64) & 0x001F) << 10) +
+            ((((int)m_code[1] - 64) & 0x001F) << 5) +
+            ((((int)m_code[2] - 64) & 0x001F));
 
     mbus_data_int_encode(m_data, 2, m_val);
 
@@ -887,16 +887,16 @@ mbus_data_manufacturer_encode(uint8_t *m_data, uint8_t *m_code)
 ///
 //------------------------------------------------------------------------------
 const char *
-mbus_decode_manufacturer(uint8_t byte1, uint8_t byte2)
+mbus_decode_manufacturer(unsigned char byte1, unsigned char byte2)
 {
     static char m_str[4];
 
-    uint32_t m_id;
+    int m_id;
 
     m_str[0] = byte1;
     m_str[1] = byte2;
 
-    mbus_data_int_decode(m_str, 2, &m_id);
+    mbus_data_int_decode((unsigned char *) m_str, 2, &m_id);
 
     m_str[0] = (char)(((m_id>>10) & 0x001F) + 64);
     m_str[1] = (char)(((m_id>>5)  & 0x001F) + 64);
@@ -910,7 +910,7 @@ const char *
 mbus_data_product_name(mbus_data_variable_header *header)
 {
     static char buff[128];
-    unsigned uint32_t manufacturer;
+    unsigned int manufacturer;
 
     memset(buff, 0, sizeof(buff));
 
@@ -1486,7 +1486,7 @@ mbus_data_fixed_medium(mbus_data_fixed *data)
 /// For fixed-length frames, get a string describing the unit of the data.
 ///
 const char *
-mbus_data_fixed_unit(uint32_t medium_unit_byte)
+mbus_data_fixed_unit(int medium_unit_byte)
 {
     static char buff[256];
 
@@ -1758,7 +1758,7 @@ mbus_data_fixed_unit(uint32_t medium_unit_byte)
 /// For variable-length frames, returns a string describing the medium.
 ///
 const char *
-mbus_data_variable_medium_lookup(uint8_t medium)
+mbus_data_variable_medium_lookup(unsigned char medium)
 {
     static char buff[256];
 
@@ -1954,7 +1954,7 @@ mbus_data_variable_medium_lookup(uint8_t medium)
 ///
 //------------------------------------------------------------------------------
 const char *
-mbus_unit_prefix(uint32_t exp)
+mbus_unit_prefix(int exp)
 {
     static char buff[256];
 
@@ -2012,8 +2012,8 @@ mbus_unit_prefix(uint32_t exp)
 ///
 /// See the table on page 41 the M-BUS specification.
 //------------------------------------------------------------------------------
-uint8_t
-mbus_dif_datalength_lookup(uint8_t dif)
+unsigned char
+mbus_dif_datalength_lookup(unsigned char dif)
 {
     switch (dif & MBUS_DATA_RECORD_DIF_MASK_DATA)
     {
@@ -2064,10 +2064,10 @@ mbus_dif_datalength_lookup(uint8_t dif)
 /// See section 8.4.3  Codes for Value Information Field (VIF) in the M-BUS spec
 //------------------------------------------------------------------------------
 const char *
-mbus_vif_unit_lookup(uint8_t vif)
+mbus_vif_unit_lookup(unsigned char vif)
 {
     static char buff[256];
-    uint32_t n;
+    int n;
 
     switch (vif & MBUS_DIB_VIF_WITHOUT_EXTENSION) // ignore the extension bit in this selection
     {
@@ -2278,7 +2278,7 @@ mbus_vif_unit_lookup(uint8_t vif)
         case 0x74+2:
         case 0x74+3:
             {
-                uint32_t offset;
+                int offset;
 
                 if      ((vif & 0x7C) == 0x20)
                     offset = snprintf(buff, sizeof(buff), "On time ");
@@ -2392,7 +2392,7 @@ mbus_vif_unit_lookup(uint8_t vif)
 // See section 6.6  Codes for general application errors in the M-BUS spec
 //------------------------------------------------------------------------------
 const char *
-mbus_data_error_lookup(uint32_t error)
+mbus_data_error_lookup(int error)
 {
     static char buff[256];
 
@@ -2447,7 +2447,7 @@ mbus_data_error_lookup(uint32_t error)
 }
 
 static const char *
-mbus_unit_duration_nn(uint32_t nn)
+mbus_unit_duration_nn(int nn)
 {
     switch (nn)
     {
@@ -2464,7 +2464,7 @@ mbus_unit_duration_nn(uint32_t nn)
 }
 
 static const char *
-mbus_unit_duration_pp(uint32_t pp)
+mbus_unit_duration_pp(int pp)
 {
     switch (pp)
     {
@@ -2487,7 +2487,7 @@ static const char *
 mbus_vib_unit_lookup_fb(mbus_value_information_block *vib)
 {
     static char buff[256];
-    uint32_t n;
+    int n;
     const char * prefix = "";
     switch (vib->vife[0] & MBUS_DIB_VIF_WITHOUT_EXTENSION)
     {
@@ -2738,10 +2738,10 @@ static const char *
 mbus_vib_unit_lookup_fd(mbus_value_information_block *vib)
 {
     static char buff[256];
-    uint32_t n;
+    int n;
 
     // ignore the extension bit in this selection
-    const uint8_t masked_vife0 = vib->vife[0] & MBUS_DIB_VIF_WITHOUT_EXTENSION;
+    const unsigned char masked_vife0 = vib->vife[0] & MBUS_DIB_VIF_WITHOUT_EXTENSION;
 
     if ((masked_vife0 & 0x7C) == 0x00)
     {
@@ -3057,7 +3057,7 @@ const char *
 mbus_vib_unit_lookup(mbus_value_information_block *vib)
 {
     static char buff[256];
-    uint32_t n;
+    int n;
 
     if (vib == NULL)
         return "";
@@ -3124,11 +3124,11 @@ const char *
 mbus_data_record_decode(mbus_data_record *record)
 {
     static char buff[768];
-    uint8_t vif, vife;
+    unsigned char vif, vife;
 
     if (record)
     {
-        uint32_t int_val;
+        int int_val;
         float float_val;
         long long long_long_val;
         struct tm time;
@@ -3274,7 +3274,7 @@ mbus_data_record_decode(mbus_data_record *record)
 
             case 0x09: // 2 digit BCD (8 bit)
 
-                int_val = (uint32_t)mbus_data_bcd_decode_hex(record->data, 1);
+                int_val = (int)mbus_data_bcd_decode_hex(record->data, 1);
                 snprintf(buff, sizeof(buff), "%X", int_val);
 
                 if (debug)
@@ -3284,7 +3284,7 @@ mbus_data_record_decode(mbus_data_record *record)
 
             case 0x0A: // 4 digit BCD (16 bit)
 
-                int_val = (uint32_t)mbus_data_bcd_decode_hex(record->data, 2);
+                int_val = (int)mbus_data_bcd_decode_hex(record->data, 2);
                 snprintf(buff, sizeof(buff), "%X", int_val);
 
                 if (debug)
@@ -3294,7 +3294,7 @@ mbus_data_record_decode(mbus_data_record *record)
 
             case 0x0B: // 6 digit BCD (24 bit)
 
-                int_val = (uint32_t)mbus_data_bcd_decode_hex(record->data, 3);
+                int_val = (int)mbus_data_bcd_decode_hex(record->data, 3);
                 snprintf(buff, sizeof(buff), "%X", int_val);
 
                 if (debug)
@@ -3304,7 +3304,7 @@ mbus_data_record_decode(mbus_data_record *record)
 
             case 0x0C: // 8 digit BCD (32 bit)
 
-                int_val = (uint32_t)mbus_data_bcd_decode_hex(record->data, 4);
+                int_val = (int)mbus_data_bcd_decode_hex(record->data, 4);
                 snprintf(buff, sizeof(buff), "%X", int_val);
 
                 if (debug)
@@ -3324,13 +3324,13 @@ mbus_data_record_decode(mbus_data_record *record)
 
             case 0x0F: // special functions
 
-                mbus_data_bin_decode(buff, record->data, record->data_len, sizeof(buff));
+                mbus_data_bin_decode((unsigned char *) buff, (const unsigned char *) record->data, record->data_len, sizeof(buff));
                 break;
 
             case 0x0D: // variable length
                 if (record->data_len <= 0xBF)
                 {
-                    mbus_data_str_decode(buff, record->data, record->data_len);
+                    mbus_data_str_decode((unsigned char *) buff, (const unsigned char *) record->data, record->data_len);
                     break;
                 }
                 /*@fallthrough@*/
@@ -3387,9 +3387,9 @@ mbus_data_record_value(mbus_data_record *record)
 //------------------------------------------------------------------------------
 long mbus_data_record_storage_number(mbus_data_record *record)
 {
-    uint32_t bit_index = 0;
+    int bit_index = 0;
     long result = 0;
-    uint32_t i;
+    int i;
 
     if (record)
     {
@@ -3413,9 +3413,9 @@ long mbus_data_record_storage_number(mbus_data_record *record)
 //------------------------------------------------------------------------------
 long mbus_data_record_tariff(mbus_data_record *record)
 {
-    uint32_t bit_index = 0;
+    int bit_index = 0;
     long result = 0;
-    uint32_t i;
+    int i;
 
     if (record && (record->drh.dib.ndife > 0))
     {
@@ -3434,11 +3434,11 @@ long mbus_data_record_tariff(mbus_data_record *record)
 //------------------------------------------------------------------------------
 /// Return device unit for a variable-length data record
 //------------------------------------------------------------------------------
-uint32_t mbus_data_record_device(mbus_data_record *record)
+int mbus_data_record_device(mbus_data_record *record)
 {
-    uint32_t bit_index = 0;
-    uint32_t result = 0;
-    uint32_t i;
+    int bit_index = 0;
+    int result = 0;
+    int i;
 
     if (record && (record->drh.dib.ndife > 0))
     {
@@ -3497,7 +3497,7 @@ mbus_data_record_function(mbus_data_record *record)
 /// For fixed-length frames, return a string describing the type of value (stored or actual)
 ///
 const char *
-mbus_data_fixed_function(uint32_t status)
+mbus_data_fixed_function(int status)
 {
     static char buff[128];
 
@@ -3517,8 +3517,8 @@ mbus_data_fixed_function(uint32_t status)
 //------------------------------------------------------------------------------
 /// PARSE M-BUS frame data structures from binary data.
 //------------------------------------------------------------------------------
-uint32_t
-mbus_parse(mbus_frame *frame, uint8_t *data, size_t data_size)
+int
+mbus_parse(mbus_frame *frame, unsigned char *data, size_t data_size)
 {
     size_t i, len;
 
@@ -3681,7 +3681,7 @@ mbus_parse(mbus_frame *frame, uint8_t *data, size_t data_size)
 //------------------------------------------------------------------------------
 /// Parse the fixed-length data of a M-Bus frame
 //------------------------------------------------------------------------------
-uint32_t
+int
 mbus_data_fixed_parse(mbus_frame *frame, mbus_data_fixed *data)
 {
     if (frame && data)
@@ -3720,7 +3720,7 @@ mbus_data_fixed_parse(mbus_frame *frame, mbus_data_fixed *data)
 //------------------------------------------------------------------------------
 /// Parse the variable-length data of a M-Bus frame
 //------------------------------------------------------------------------------
-uint32_t
+int
 mbus_data_variable_parse(mbus_frame *frame, mbus_data_variable *data)
 {
     mbus_data_record *record = NULL;
@@ -3808,7 +3808,7 @@ mbus_data_variable_parse(mbus_frame *frame, mbus_data_variable *data)
             while ((i < frame->data_size) &&
                    (frame->data[i] & MBUS_DIB_DIF_EXTENSION_BIT))
             {
-                uint8_t dife;
+                unsigned char dife;
 
                 if (record->drh.dib.ndife >= MBUS_DATA_INFO_BLOCK_DIFE_SIZE)
                 {
@@ -3840,7 +3840,7 @@ mbus_data_variable_parse(mbus_frame *frame, mbus_data_variable *data)
             if ((record->drh.vib.vif & MBUS_DIB_VIF_WITHOUT_EXTENSION) == 0x7C)
             {
                 // variable length VIF in ASCII format
-                uint32_t var_vif_len;
+                int var_vif_len;
                 var_vif_len = frame->data[i++];
                 if (var_vif_len > MBUS_VALUE_INFO_BLOCK_CUSTOM_VIF_SIZE)
                 {
@@ -3870,7 +3870,7 @@ mbus_data_variable_parse(mbus_frame *frame, mbus_data_variable *data)
                 while ((i < frame->data_size) &&
                        (frame->data[i] & MBUS_DIB_VIF_EXTENSION_BIT))
                 {
-                    uint8_t vife;
+                    unsigned char vife;
 
                     if (record->drh.vib.nvife >= MBUS_VALUE_INFO_BLOCK_VIFE_SIZE)
                     {
@@ -3938,7 +3938,7 @@ mbus_data_variable_parse(mbus_frame *frame, mbus_data_variable *data)
 /// Check the stype of the frame data (error, fixed or variable) and dispatch to the
 /// corresponding parser function.
 //------------------------------------------------------------------------------
-uint32_t
+int
 mbus_frame_data_parse(mbus_frame *frame, mbus_frame_data *data)
 {
     char direction;
@@ -3965,7 +3965,7 @@ mbus_frame_data_parse(mbus_frame *frame, mbus_frame_data *data)
 
             if (frame->data_size > 0)
             {
-                data->error = (uint32_t) frame->data[0];
+                data->error = (int) frame->data[0];
             }
             else
             {
@@ -4016,8 +4016,8 @@ mbus_frame_data_parse(mbus_frame *frame, mbus_frame_data *data)
 /// on the bus. The binary packet format is different for the different types
 /// of M-bus frames.
 //------------------------------------------------------------------------------
-uint32_t
-mbus_frame_pack(mbus_frame *frame, uint8_t *data, size_t data_size)
+int
+mbus_frame_pack(mbus_frame *frame, unsigned char *data, size_t data_size)
 {
     size_t i, offset = 0;
 
@@ -4120,11 +4120,11 @@ mbus_frame_pack(mbus_frame *frame, uint8_t *data, size_t data_size)
 //------------------------------------------------------------------------------
 /// pack the data stuctures into frame->data
 //------------------------------------------------------------------------------
-uint32_t
+int
 mbus_frame_internal_pack(mbus_frame *frame, mbus_frame_data *frame_data)
 {
     mbus_data_record *record;
-    uint32_t j;
+    int j;
 
     if (frame == NULL || frame_data == NULL)
         return -1;
@@ -4232,7 +4232,7 @@ mbus_frame_internal_pack(mbus_frame *frame, mbus_frame_data *frame_data)
 /// Switch parse debugging
 //------------------------------------------------------------------------------
 void
-mbus_parse_set_debug(uint32_t debug)
+mbus_parse_set_debug(int debug)
 {
     parse_debug = debug;
 }
@@ -4240,12 +4240,12 @@ mbus_parse_set_debug(uint32_t debug)
 //------------------------------------------------------------------------------
 /// Dump frame in HEX on standard output
 //------------------------------------------------------------------------------
-uint32_t
+int
 mbus_frame_print(mbus_frame *frame)
 {
     mbus_frame *iter;
-    uint8_t data_buff[256];
-    uint32_t len, i;
+    unsigned char data_buff[256];
+    int len, i;
 
     if (frame == NULL)
         return -1;
@@ -4273,7 +4273,7 @@ mbus_frame_print(mbus_frame *frame)
 /// Print the data part of a frame.
 ///
 //------------------------------------------------------------------------------
-uint32_t
+int
 mbus_frame_data_print(mbus_frame_data *data)
 {
     if (data)
@@ -4300,7 +4300,7 @@ mbus_frame_data_print(mbus_frame_data *data)
 //------------------------------------------------------------------------------
 /// Print M-bus frame info to stdout
 //------------------------------------------------------------------------------
-uint32_t
+int
 mbus_data_variable_header_print(mbus_data_variable_header *header)
 {
     if (header)
@@ -4326,7 +4326,7 @@ mbus_data_variable_header_print(mbus_data_variable_header *header)
     return -1;
 }
 
-uint32_t
+int
 mbus_data_variable_print(mbus_data_variable *data)
 {
     mbus_data_record *record;
@@ -4369,7 +4369,7 @@ mbus_data_variable_print(mbus_data_variable *data)
             // DIFE
             for (j = 0; j < record->drh.dib.ndife; j++)
             {
-                uint8_t dife = record->drh.dib.dife[j];
+                unsigned char dife = record->drh.dib.dife[j];
 
                 printf("DIFE[%zu]               = %.2X\n", j,  dife);
                 printf("DIFE[%zu].Extension     = %s\n",   j, (dife & MBUS_DATA_RECORD_DIFE_MASK_EXTENSION) ? "Yes" : "No");
@@ -4386,7 +4386,7 @@ mbus_data_variable_print(mbus_data_variable *data)
             // VIFE
             for (j = 0; j < record->drh.vib.nvife; j++)
             {
-                uint8_t vife = record->drh.vib.vife[j];
+                unsigned char vife = record->drh.vib.vife[j];
 
                 printf("VIFE[%zu]           = %.2X\n", j,  vife);
                 printf("VIFE[%zu].Extension = %s\n",   j, (vife & MBUS_DIB_VIF_EXTENSION_BIT) ? "Yes" : "No");
@@ -4400,10 +4400,10 @@ mbus_data_variable_print(mbus_data_variable *data)
     return -1;
 }
 
-uint32_t
+int
 mbus_data_fixed_print(mbus_data_fixed *data)
 {
-    uint32_t val;
+    int val;
 
     if (data)
     {
@@ -4459,14 +4459,14 @@ mbus_hex_dump(const char *label, const char *buff, size_t len)
 
     for (i = 0; i < len; i++)
     {
-       fprintf(stderr, " %02X", (uint8_t) buff[i]);
+       fprintf(stderr, " %02X", (unsigned char) buff[i]);
     }
 
     fprintf(stderr, "\n");
 }
 
-uint32_t
-mbus_data_error_print(uint32_t error)
+int
+mbus_data_error_print(int error)
 {
     printf("%s: Error = %d\n", __PRETTY_FUNCTION__, error);
 
@@ -4485,8 +4485,8 @@ mbus_data_error_print(uint32_t error)
 /// Encode string to XML
 ///
 //------------------------------------------------------------------------------
-uint32_t
-mbus_str_xml_encode(uint8_t *dst, const uint8_t *src, size_t max_len)
+int
+mbus_str_xml_encode(unsigned char *dst, const unsigned char *src, size_t max_len)
 {
     size_t i, len;
 
@@ -4521,16 +4521,16 @@ mbus_str_xml_encode(uint8_t *dst, const uint8_t *src, size_t max_len)
             switch (src[i])
             {
                 case '&':
-                    len += snprintf(&dst[len], max_len - len, "&amp;");
+                    len += snprintf((char *) &dst[len], max_len - len, "&amp;");
                     break;
                 case '<':
-                    len += snprintf(&dst[len], max_len - len, "&lt;");
+                    len += snprintf((char *) &dst[len], max_len - len, "&lt;");
                     break;
                 case '>':
-                    len += snprintf(&dst[len], max_len - len, "&gt;");
+                    len += snprintf((char *) &dst[len], max_len - len, "&gt;");
                     break;
                 case '"':
-                    len += snprintf(&dst[len], max_len - len, "&quot;");
+                    len += snprintf((char *) &dst[len], max_len - len, "&quot;");
                     break;
                 default:
                     dst[len++] = src[i];
@@ -4564,11 +4564,11 @@ mbus_data_variable_header_xml(mbus_data_variable_header *header)
                 mbus_decode_manufacturer(header->manufacturer[0], header->manufacturer[1]));
         len += snprintf(&buff[len], sizeof(buff) - len, "        <Version>%d</Version>\n", header->version);
 
-        mbus_str_xml_encode(str_encoded, mbus_data_product_name(header), sizeof(str_encoded));
+        mbus_str_xml_encode((unsigned char *) str_encoded, (const unsigned char *) mbus_data_product_name(header), sizeof(str_encoded));
 
         len += snprintf(&buff[len], sizeof(buff) - len, "        <ProductName>%s</ProductName>\n", str_encoded);
 
-        mbus_str_xml_encode(str_encoded, mbus_data_variable_medium_lookup(header->medium), sizeof(str_encoded));
+        mbus_str_xml_encode((unsigned char *) str_encoded, (const unsigned char *) mbus_data_variable_medium_lookup(header->medium), sizeof(str_encoded));
 
         len += snprintf(&buff[len], sizeof(buff) - len, "        <Medium>%s</Medium>\n", str_encoded);
         len += snprintf(&buff[len], sizeof(buff) - len, "        <AccessNumber>%d</AccessNumber>\n", header->access_no);
@@ -4587,7 +4587,7 @@ mbus_data_variable_header_xml(mbus_data_variable_header *header)
 /// Generate XML for a single variable-length data record
 //------------------------------------------------------------------------------
 char *
-mbus_data_variable_record_xml(mbus_data_record *record, uint32_t record_cnt, uint32_t frame_cnt, mbus_data_variable_header *header)
+mbus_data_variable_record_xml(mbus_data_record *record, int record_cnt, int frame_cnt, mbus_data_variable_header *header)
 {
     static char buff[8192];
     char str_encoded[768];
@@ -4622,7 +4622,7 @@ mbus_data_variable_record_xml(mbus_data_record *record, uint32_t record_cnt, uin
         }
         else
         {
-            mbus_str_xml_encode(str_encoded, mbus_data_record_function(record), sizeof(str_encoded));
+            mbus_str_xml_encode((unsigned char *) str_encoded, (const unsigned char *) mbus_data_record_function(record), sizeof(str_encoded));
             len += snprintf(&buff[len], sizeof(buff) - len,
                             "        <Function>%s</Function>\n", str_encoded);
 
@@ -4638,12 +4638,12 @@ mbus_data_variable_record_xml(mbus_data_record *record, uint32_t record_cnt, uin
                                 mbus_data_record_device(record));
             }
 
-            mbus_str_xml_encode(str_encoded, mbus_data_record_unit(record), sizeof(str_encoded));
+            mbus_str_xml_encode((unsigned char *) str_encoded, (const unsigned char *) mbus_data_record_unit(record), sizeof(str_encoded));
             len += snprintf(&buff[len], sizeof(buff) - len,
                             "        <Unit>%s</Unit>\n", str_encoded);
         }
 
-        mbus_str_xml_encode(str_encoded, mbus_data_record_value(record), sizeof(str_encoded));
+        mbus_str_xml_encode((unsigned char *) str_encoded, (const unsigned char *) mbus_data_record_value(record), sizeof(str_encoded));
         len += snprintf(&buff[len], sizeof(buff) - len, "        <Value>%s</Value>\n", str_encoded);
 
         if (record->timestamp > 0)
@@ -4671,7 +4671,7 @@ mbus_data_variable_xml(mbus_data_variable *data)
     mbus_data_record *record;
     char *buff = NULL, *new_buff;
     size_t len = 0, buff_size = 8192;
-    uint32_t i;
+    int i;
 
     if (data)
     {
@@ -4723,7 +4723,7 @@ mbus_data_fixed_xml(mbus_data_fixed *data)
     char *buff = NULL;
     char str_encoded[256];
     size_t len = 0, buff_size = 8192;
-    uint32_t val;
+    int val;
 
     if (data)
     {
@@ -4739,7 +4739,7 @@ mbus_data_fixed_xml(mbus_data_fixed *data)
         len += snprintf(&buff[len], buff_size - len, "    <SlaveInformation>\n");
         len += snprintf(&buff[len], buff_size - len, "        <Id>%llX</Id>\n", mbus_data_bcd_decode_hex(data->id_bcd, 4));
 
-        mbus_str_xml_encode(str_encoded, mbus_data_fixed_medium(data), sizeof(str_encoded));
+        mbus_str_xml_encode((unsigned char *) str_encoded, (const unsigned char *) mbus_data_fixed_medium(data), sizeof(str_encoded));
         len += snprintf(&buff[len], buff_size - len, "        <Medium>%s</Medium>\n", str_encoded);
 
         len += snprintf(&buff[len], buff_size - len, "        <AccessNumber>%d</AccessNumber>\n", data->tx_cnt);
@@ -4748,10 +4748,10 @@ mbus_data_fixed_xml(mbus_data_fixed *data)
 
         len += snprintf(&buff[len], buff_size - len, "    <DataRecord id=\"0\">\n");
 
-        mbus_str_xml_encode(str_encoded, mbus_data_fixed_function(data->status), sizeof(str_encoded));
+        mbus_str_xml_encode((unsigned char *) str_encoded, (const unsigned char *) mbus_data_fixed_function(data->status), sizeof(str_encoded));
         len += snprintf(&buff[len], buff_size - len, "        <Function>%s</Function>\n", str_encoded);
 
-        mbus_str_xml_encode(str_encoded, mbus_data_fixed_unit(data->cnt1_type), sizeof(str_encoded));
+        mbus_str_xml_encode((unsigned char *) str_encoded, (const unsigned char *) mbus_data_fixed_unit(data->cnt1_type), sizeof(str_encoded));
         len += snprintf(&buff[len], buff_size - len, "        <Unit>%s</Unit>\n", str_encoded);
         if ((data->status & MBUS_DATA_FIXED_STATUS_FORMAT_MASK) == MBUS_DATA_FIXED_STATUS_FORMAT_BCD)
         {
@@ -4767,10 +4767,10 @@ mbus_data_fixed_xml(mbus_data_fixed *data)
 
         len += snprintf(&buff[len], buff_size - len, "    <DataRecord id=\"1\">\n");
 
-        mbus_str_xml_encode(str_encoded, mbus_data_fixed_function(data->status), sizeof(str_encoded));
+        mbus_str_xml_encode((unsigned char *) str_encoded, (const unsigned char *) mbus_data_fixed_function(data->status), sizeof(str_encoded));
         len += snprintf(&buff[len], buff_size - len, "        <Function>%s</Function>\n", str_encoded);
 
-        mbus_str_xml_encode(str_encoded, mbus_data_fixed_unit(data->cnt2_type), sizeof(str_encoded));
+        mbus_str_xml_encode((unsigned char *) str_encoded, (const unsigned char *) mbus_data_fixed_unit(data->cnt2_type), sizeof(str_encoded));
         len += snprintf(&buff[len], buff_size - len, "        <Unit>%s</Unit>\n", str_encoded);
         if ((data->status & MBUS_DATA_FIXED_STATUS_FORMAT_MASK) == MBUS_DATA_FIXED_STATUS_FORMAT_BCD)
         {
@@ -4796,7 +4796,7 @@ mbus_data_fixed_xml(mbus_data_fixed *data)
 /// Generate XML representation of a general application error.
 //------------------------------------------------------------------------------
 char *
-mbus_data_error_xml(uint32_t error)
+mbus_data_error_xml(int error)
 {
     char *buff = NULL;
     char str_encoded[256];
@@ -4812,7 +4812,7 @@ mbus_data_error_xml(uint32_t error)
 
     len += snprintf(&buff[len], buff_size - len, "    <SlaveInformation>\n");
 
-    mbus_str_xml_encode(str_encoded, mbus_data_error_lookup(error), sizeof(str_encoded));
+    mbus_str_xml_encode((unsigned char *) str_encoded, (const unsigned char *) mbus_data_error_lookup(error), sizeof(str_encoded));
     len += snprintf(&buff[len], buff_size - len, "        <Error>%s</Error>\n", str_encoded);
 
     len += snprintf(&buff[len], buff_size - len, "    </SlaveInformation>\n\n");
@@ -4863,7 +4863,7 @@ mbus_frame_xml(mbus_frame *frame)
     char *buff = NULL, *new_buff;
 
     size_t len = 0, buff_size = 8192;
-    uint32_t record_cnt = 0, frame_cnt;
+    int record_cnt = 0, frame_cnt;
 
     if (frame)
     {
@@ -5109,7 +5109,7 @@ char *
 mbus_frame_get_secondary_address(mbus_frame *frame)
 {
     static char addr[32];
-    mbus_frame_data *data;
+    mbus_frame_data *data = NULL;
     unsigned long id;
 
     if (frame == NULL || (data = mbus_frame_data_new()) == NULL)
@@ -5151,10 +5151,10 @@ mbus_frame_get_secondary_address(mbus_frame *frame)
 //------------------------------------------------------------------------------
 // Pack a secondary address string into an mbus frame
 //------------------------------------------------------------------------------
-uint32_t
+int
 mbus_frame_select_secondary_pack(mbus_frame *frame, char *address)
 {
-    uint32_t val, i, j, k;
+    int val, i, j, k;
     char tmp[16];
 
     if (frame == NULL || address == NULL)
@@ -5221,8 +5221,8 @@ mbus_frame_select_secondary_pack(mbus_frame *frame, char *address)
 //---------------------------------------------------------
 // Checks if an integer is a valid primary address.
 //---------------------------------------------------------
-uint32_t
-mbus_is_primary_address(uint32_t value)
+int
+mbus_is_primary_address(int value)
 {
     return ((value >= 0x00) && (value <= 0xFF));
 }
@@ -5230,10 +5230,10 @@ mbus_is_primary_address(uint32_t value)
 //---------------------------------------------------------
 // Checks if an string is a valid secondary address.
 //---------------------------------------------------------
-uint32_t
+int
 mbus_is_secondary_address(const char * value)
 {
-    uint32_t i;
+    int i;
 
     if (value == NULL)
         return 0;

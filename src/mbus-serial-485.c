@@ -20,7 +20,7 @@
 #include <errno.h>
 #include <string.h>
 
-#include "mbus-serial.h"
+#include "mbus-serial-485.h"
 #include "mbus-protocol-aux.h"
 #include "mbus-protocol.h"
 
@@ -40,11 +40,9 @@ mbus_serial_connect(mbus_handle *handle)
         return -1;
 
     serial_data = (mbus_serial_data *) handle->auxdata;
-    if (serial_data == NULL || serial_data->port == NULL)
+    if (serial_data == NULL)
         return -1;
 
-    device = serial_data->device;
-    term = &(serial_data->t);
     //
     // create the SERIAL connection
     //
@@ -69,8 +67,8 @@ mbus_serial_connect(mbus_handle *handle)
     // For 2400Bd this means (330 + 11) / 2400 + 0.15 = 292 ms (added 11 bit periods to receive first byte).
     // I.e. timeout of 0.3s seems appropriate for 2400Bd.
 
-    serial_data->idle_time = pdMS_TO_TICKS((uint32_t) (((double) (33.0/((double)serial_port->config.baudrate)))*1000.0));
-    serial_data->max_wait = pdMS_TO_TICKS((uint32_t) ((((double) (330.0/((double)serial_port->config.baudrate)))*1000.0) + 50.0));
+    serial_data->idle_time = pdMS_TO_TICKS((uint32_t) (((double) (33.0/((double)serial_data->config.baud_rate)))*1000.0));
+    serial_data->max_wait = pdMS_TO_TICKS((uint32_t) ((((double) (330.0/((double)serial_data->config.baud_rate)))*1000.0) + 50.0));
 
 #ifdef MBUS_SERIAL_DEBUG
     printf("%s: t.c_cflag = %x\n", __PRETTY_FUNCTION__, term->c_cflag);
@@ -199,7 +197,7 @@ mbus_serial_send_frame(mbus_handle *handle, mbus_frame *frame)
         // call the send event function, if the callback function is registered
         //
         if (handle->send_event)
-                handle->send_event(MBUS_HANDLE_TYPE_SERIAL, buff, len);
+                handle->send_event(MBUS_HANDLE_TYPE_SERIAL, (const char*) buff, len);
     }
     else
     {
@@ -255,7 +253,7 @@ mbus_serial_recv_frame(mbus_handle *handle, mbus_frame *frame)
 
         //printf("%s: Attempt to read %d bytes [len = %d]\n", __PRETTY_FUNCTION__, remaining, len);
 
-        if ((nread = uart_read_bytes(serial_data->port, &buff[len], remaining, pdMS_TO_TICKS(serial_port->max_wait))) == -1)
+        if ((nread = uart_read_bytes(serial_data->port, &buff[len], remaining, pdMS_TO_TICKS(serial_data->max_wait))) == -1)
         {
        //     fprintf(stderr, "%s: aborting recv frame (remaining = %d, len = %d, nread = %d)\n",
          //          __PRETTY_FUNCTION__, remaining, len, nread);
@@ -272,12 +270,12 @@ mbus_serial_recv_frame(mbus_handle *handle, mbus_frame *frame)
                 // abort to avoid endless loop
                 fprintf(stderr, "%s: Timeout\n", __PRETTY_FUNCTION__);
                 // Insert idle time
-                vTaskDelay(pdMS_TO_TICKS(serial_port->idle_time));
+                vTaskDelay(pdMS_TO_TICKS(serial_data->idle_time));
                 break;
             }
         }
 
-        if (len > (SSIZE_MAX-nread))
+        if (len > (PACKET_BUFF_SIZE-nread))
         {
             // avoid overflow
             return MBUS_RECV_RESULT_ERROR;
@@ -285,7 +283,7 @@ mbus_serial_recv_frame(mbus_handle *handle, mbus_frame *frame)
 
         len += nread;
 
-    } while ((remaining = mbus_parse(frame, buff, len)) > 0);
+    } while ((remaining = mbus_parse(frame, (unsigned char *) buff, len)) > 0);
 
     if (len == 0)
     {

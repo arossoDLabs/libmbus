@@ -18,7 +18,7 @@
 #ifndef MBUS_SERIAL_H
 #define MBUS_SERIAL_H
 
-#include <freertos/freeRTOS.h>
+#include <freertos/FreeRTOS.h>
 #include <freertos/queue.h>
 #include <driver/uart.h>
 #include <stdint.h>
