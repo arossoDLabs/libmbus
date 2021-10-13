@@ -175,7 +175,7 @@ void mbus_register_found_event(mbus_handle *handle, void (*event)(mbus_handle *h
  *
  * @return Initialized "unified" handler when successful, NULL otherwise;
  */
-mbus_handle * mbus_context_serial(uart_port_t port, uint32_t baudrate, uint8_t rx, uint8_t tx, uint8_t rts, uint8_t cts);
+mbus_handle * mbus_context_serial(uart_port_t port, uint32_t baudrate, uint8_t rx, uint8_t tx, int8_t rts, int8_t cts);
 
 /**
  * Allocate and initialize M-Bus TCP context.

@@ -5169,7 +5169,7 @@ mbus_frame_select_secondary_pack(mbus_frame *frame, char *address)
         return -1;
     }
 
-    frame->control  = MBUS_CONTROL_MASK_SND_UD | MBUS_CONTROL_MASK_DIR_M2S | MBUS_CONTROL_MASK_FCB;
+    frame->control  = MBUS_CONTROL_MASK_SND_UD | MBUS_CONTROL_MASK_DIR_M2S; //| MBUS_CONTROL_MASK_FCB;
     frame->address  = MBUS_ADDRESS_NETWORK_LAYER;             // for addressing secondary slaves
     frame->control_information = MBUS_CONTROL_INFO_SELECT_SLAVE; // mode 1
 

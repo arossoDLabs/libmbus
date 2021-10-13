@@ -34,7 +34,8 @@ typedef struct _mbus_serial_data
 {
     uart_port_t port;
     uart_config_t config;
-    uint8_t tx, rx, rts, cts;
+    uint8_t tx, rx;
+    int8_t rts, cts;
     uint32_t max_wait, idle_time;
     QueueHandle_t queue;
 } mbus_serial_data;

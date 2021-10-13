@@ -18,9 +18,9 @@
 #include <string.h>
 #include <ctype.h>
 #include <math.h>
+#include <esp_log.h>
 
-/*@ignore@*/
-#define MBUS_ERROR(...) fprintf (stderr, __VA_ARGS__)
+#define TAG "MBUS_AUX"
 
 #ifdef _DEBUG_
 #define MBUS_DEBUG(...) fprintf (stderr, __VA_ARGS__)
@@ -788,7 +788,7 @@ int mbus_fixed_normalize(int medium_unit, long medium_value, char **unit_out, do
 
     if (unit_out == NULL || value_out == NULL || quantity_out == NULL)
     {
-        MBUS_ERROR("%s: Invalid parameter.\n", __PRETTY_FUNCTION__);
+        ESP_LOGE(TAG, "%s: Invalid parameter.\n", __PRETTY_FUNCTION__);
         return -1;
     }
 
@@ -849,7 +849,7 @@ int mbus_variable_value_decode(mbus_data_record *record, double *value_out_real,
             case 0x00: /* no data */
                 if ((*value_out_str = (char*) malloc(1)) == NULL)
                 {
-                    MBUS_ERROR("Unable to allocate memory");
+                    ESP_LOGE(TAG, "Unable to allocate memory");
                     return -1;
                 }
                 *value_out_str[0] = '\0';
@@ -869,7 +869,7 @@ int mbus_variable_value_decode(mbus_data_record *record, double *value_out_real,
                     mbus_data_tm_decode(&time, record->data, 2);
                     if ((*value_out_str = (char*) malloc(11)) == NULL)
                     {
-                        MBUS_ERROR("Unable to allocate memory");
+                        ESP_LOGE(TAG, "Unable to allocate memory");
                         return -1;
                     }
                     *value_out_str_size = snprintf(*value_out_str, 11, "%04d-%02d-%02d",
@@ -901,7 +901,7 @@ int mbus_variable_value_decode(mbus_data_record *record, double *value_out_real,
                     mbus_data_tm_decode(&time, record->data, 4);
                     if ((*value_out_str = (char*) malloc(21)) == NULL)
                     {
-                        MBUS_ERROR("Unable to allocate memory");
+                        ESP_LOGE(TAG, "Unable to allocate memory");
                         return -1;
                     }
                     *value_out_str_size = snprintf(*value_out_str, 21, "%04d-%02d-%02dT%02d:%02d:%02dZ",
@@ -936,7 +936,7 @@ int mbus_variable_value_decode(mbus_data_record *record, double *value_out_real,
                     mbus_data_tm_decode(&time, record->data, 6);
                     if ((*value_out_str = (char*) malloc(21)) == NULL)
                     {
-                        MBUS_ERROR("Unable to allocate memory");
+                        ESP_LOGE(TAG, "Unable to allocate memory");
                         return -1;
                     }
                     *value_out_str_size = snprintf(*value_out_str, 21, "%04d-%02d-%02dT%02d:%02d:%02dZ",
@@ -985,7 +985,7 @@ int mbus_variable_value_decode(mbus_data_record *record, double *value_out_real,
                 if (record->data_len <= 0xBF) {
                     if ((*value_out_str = (char*) malloc(record->data_len + 1)) == NULL)
                     {
-                        MBUS_ERROR("Unable to allocate memory");
+                        ESP_LOGE(TAG, "Unable to allocate memory");
                         return -1;
                     }
                     *value_out_str_size = record->data_len;
@@ -994,7 +994,7 @@ int mbus_variable_value_decode(mbus_data_record *record, double *value_out_real,
                     break;
                 }
                 result = -2;
-                MBUS_ERROR("Non ASCII variable length not implemented yet\n");
+                ESP_LOGE(TAG, "Non ASCII variable length not implemented yet\n");
                 break;
             }
 
@@ -1006,7 +1006,7 @@ int mbus_variable_value_decode(mbus_data_record *record, double *value_out_real,
             case 0x0F: /* Special functions */
                 if ((*value_out_str = (char*) malloc(3 * record->data_len + 1)) == NULL)
                 {
-                    MBUS_ERROR("Unable to allocate memory");
+                    ESP_LOGE(TAG, "Unable to allocate memory");
                     return -1;
                 }
                 *value_out_str_size = 3 * record->data_len;
@@ -1016,13 +1016,13 @@ int mbus_variable_value_decode(mbus_data_record *record, double *value_out_real,
 
             default:
                 result = -2;
-                MBUS_ERROR("Unknown DIF (0x%.2x)", record->drh.dib.dif);
+                ESP_LOGE(TAG, "Unknown DIF (0x%.2x)", record->drh.dib.dif);
                 break;
         }
     }
     else
     {
-        MBUS_ERROR("record is null");
+        ESP_LOGE(TAG, "record is null");
         result = -3;
     }
 
@@ -1039,7 +1039,7 @@ mbus_vif_unit_normalize(int vif, double value, char **unit_out, double *value_ou
 
     if (unit_out == NULL || value_out == NULL || quantity_out == NULL)
     {
-        MBUS_ERROR("%s: Invalid parameter.\n", __PRETTY_FUNCTION__);
+        ESP_LOGE(TAG, "%s: Invalid parameter.\n", __PRETTY_FUNCTION__);
         return -1;
     }
 
@@ -1054,7 +1054,7 @@ mbus_vif_unit_normalize(int vif, double value, char **unit_out, double *value_ou
         }
     }
 
-    MBUS_ERROR("%s: Unknown VIF 0x%03X\n", __PRETTY_FUNCTION__, newVif);
+    ESP_LOGE(TAG, "%s: Unknown VIF 0x%03X\n", __PRETTY_FUNCTION__, newVif);
     *unit_out = strdup("Unknown (VIF=0x%.02X)");
     *quantity_out = strdup("Unknown");
     *value_out = 0.0;
@@ -1069,7 +1069,7 @@ mbus_vib_unit_normalize(mbus_value_information_block *vib, double value, char **
 
     if (vib == NULL || unit_out == NULL || value_out == NULL || quantity_out == NULL)
     {
-        MBUS_ERROR("%s: Invalid parameter.\n", __PRETTY_FUNCTION__);
+        ESP_LOGE(TAG, "%s: Invalid parameter.\n", __PRETTY_FUNCTION__);
         return -1;
     }
 
@@ -1079,14 +1079,14 @@ mbus_vib_unit_normalize(mbus_value_information_block *vib, double value, char **
     {
         if (vib->nvife == 0)
         {
-            MBUS_ERROR("%s: Missing VIF extension\n", __PRETTY_FUNCTION__);
+            ESP_LOGE(TAG, "%s: Missing VIF extension\n", __PRETTY_FUNCTION__);
             return -1;
         }
 
         code = ((vib->vife[0]) & MBUS_DIB_VIF_WITHOUT_EXTENSION) | 0x100;
         if (mbus_vif_unit_normalize(code, value, unit_out, value_out, quantity_out) != 0)
         {
-            MBUS_ERROR("%s: Error mbus_vif_unit_normalize\n", __PRETTY_FUNCTION__);
+            ESP_LOGE(TAG, "%s: Error mbus_vif_unit_normalize\n", __PRETTY_FUNCTION__);
             return -1;
         }
     } else {
@@ -1094,14 +1094,14 @@ mbus_vib_unit_normalize(mbus_value_information_block *vib, double value, char **
         {
             if (vib->nvife == 0)
             {
-                MBUS_ERROR("%s: Missing VIF extension\n", __PRETTY_FUNCTION__);
+                ESP_LOGE(TAG, "%s: Missing VIF extension\n", __PRETTY_FUNCTION__);
                 return -1;
             }
 
             code = ((vib->vife[0]) & MBUS_DIB_VIF_WITHOUT_EXTENSION) | 0x200;
             if (0 != mbus_vif_unit_normalize(code, value, unit_out, value_out, quantity_out))
             {
-                MBUS_ERROR("%s: Error mbus_vif_unit_normalize\n", __PRETTY_FUNCTION__);
+                ESP_LOGE(TAG, "%s: Error mbus_vif_unit_normalize\n", __PRETTY_FUNCTION__);
                 return -1;
             }
         }
@@ -1118,7 +1118,7 @@ mbus_vib_unit_normalize(mbus_value_information_block *vib, double value, char **
             code = (vib->vif) & MBUS_DIB_VIF_WITHOUT_EXTENSION;
             if (0 != mbus_vif_unit_normalize(code, value, unit_out, value_out, quantity_out))
             {
-                MBUS_ERROR("%s: Error mbus_vif_unit_normalize\n", __PRETTY_FUNCTION__);
+                ESP_LOGE(TAG, "%s: Error mbus_vif_unit_normalize\n", __PRETTY_FUNCTION__);
                 return -1;
             }
         }
@@ -1166,7 +1166,7 @@ mbus_record_new()
 
     if (!(record = (mbus_record *) malloc(sizeof(mbus_record))))
     {
-        MBUS_ERROR("%s: memory allocation error\n", __PRETTY_FUNCTION__);
+        ESP_LOGE(TAG, "%s: memory allocation error\n", __PRETTY_FUNCTION__);
         return NULL;
     }
 
@@ -1223,7 +1223,7 @@ mbus_parse_fixed_record(char status_byte, char medium_unit, unsigned char *data)
 
     if (!(record = mbus_record_new()))
     {
-        MBUS_ERROR("%s: memory allocation error\n", __PRETTY_FUNCTION__);
+        ESP_LOGE(TAG, "%s: memory allocation error\n", __PRETTY_FUNCTION__);
         return NULL;
     }
 
@@ -1232,7 +1232,7 @@ mbus_parse_fixed_record(char status_byte, char medium_unit, unsigned char *data)
 
     if (record->function_medium == NULL)
     {
-        MBUS_ERROR("%s: memory allocation error\n", __PRETTY_FUNCTION__);
+        ESP_LOGE(TAG, "%s: memory allocation error\n", __PRETTY_FUNCTION__);
         mbus_record_free(record);
         return NULL;
     }
@@ -1250,7 +1250,7 @@ mbus_parse_fixed_record(char status_byte, char medium_unit, unsigned char *data)
     record->is_numeric = 1;
     if (0 != mbus_fixed_normalize(medium_unit, value, &(record->unit), &(record->value.real_val), &(record->quantity)))
     {
-        MBUS_ERROR("Problem with mbus_fixed_normalize.\n");
+        ESP_LOGE(TAG, "Problem with mbus_fixed_normalize.\n");
         mbus_record_free(record);
         return NULL;
     }
@@ -1270,13 +1270,13 @@ mbus_parse_variable_record(mbus_data_record *data)
 
     if (data == NULL)
     {
-        MBUS_ERROR("%s: Invalid record.\n", __PRETTY_FUNCTION__);
+        ESP_LOGE(TAG, "%s: Invalid record.\n", __PRETTY_FUNCTION__);
         return NULL;
     }
 
     if (!(record = mbus_record_new()))
     {
-        MBUS_ERROR("%s: memory allocation error\n", __PRETTY_FUNCTION__);
+        ESP_LOGE(TAG, "%s: memory allocation error\n", __PRETTY_FUNCTION__);
         return NULL;
     }
 
@@ -1298,7 +1298,7 @@ mbus_parse_variable_record(mbus_data_record *data)
 
         if (record->function_medium == NULL)
         {
-            MBUS_ERROR("%s: memory allocation error\n", __PRETTY_FUNCTION__);
+            ESP_LOGE(TAG, "%s: memory allocation error\n", __PRETTY_FUNCTION__);
             mbus_record_free(record);
             return NULL;
         }
@@ -1308,7 +1308,7 @@ mbus_parse_variable_record(mbus_data_record *data)
 
         if (mbus_variable_value_decode(data, &value_out_real, &value_out_str, &value_out_str_size) != 0)
         {
-            MBUS_ERROR("%s: problem with mbus_variable_value_decode\n", __PRETTY_FUNCTION__);
+            ESP_LOGE(TAG, "%s: problem with mbus_variable_value_decode\n", __PRETTY_FUNCTION__);
             mbus_record_free(record);
             return NULL;
         }
@@ -1331,7 +1331,7 @@ mbus_parse_variable_record(mbus_data_record *data)
 
         if (record->function_medium == NULL)
         {
-            MBUS_ERROR("%s: memory allocation error\n", __PRETTY_FUNCTION__);
+            ESP_LOGE(TAG, "%s: memory allocation error\n", __PRETTY_FUNCTION__);
             mbus_record_free(record);
             return NULL;
         }
@@ -1340,7 +1340,7 @@ mbus_parse_variable_record(mbus_data_record *data)
 
         if (mbus_variable_value_decode(data, &value_out_real, &value_out_str, &value_out_str_size) != 0)
         {
-            MBUS_ERROR("%s: problem with mbus_variable_value_decode\n", __PRETTY_FUNCTION__);
+            ESP_LOGE(TAG, "%s: problem with mbus_variable_value_decode\n", __PRETTY_FUNCTION__);
             mbus_record_free(record);
             return NULL;
         }
@@ -1348,7 +1348,7 @@ mbus_parse_variable_record(mbus_data_record *data)
 
         if (mbus_vib_unit_normalize(&(data->drh.vib), value_out_real, &(record->unit), &real_val, &(record->quantity)) != 0)
         {
-            MBUS_ERROR("%s: problem with mbus_vib_unit_normalize\n", __PRETTY_FUNCTION__);
+            ESP_LOGE(TAG, "%s: problem with mbus_vib_unit_normalize\n", __PRETTY_FUNCTION__);
             mbus_record_free(record);
             record = NULL;
             return NULL;
@@ -1490,7 +1490,7 @@ mbus_frame_data_xml_normalized(mbus_frame_data *data)
 }
 
 mbus_handle *
-mbus_context_serial(uart_port_t port, uint32_t baudrate, uint8_t rx, uint8_t tx, uint8_t rts, uint8_t cts)
+mbus_context_serial(uart_port_t port, uint32_t baudrate, uint8_t rx, uint8_t tx, int8_t rts, int8_t cts)
 {
     mbus_handle *handle;
     mbus_serial_data *serial_data;
@@ -1498,7 +1498,7 @@ mbus_context_serial(uart_port_t port, uint32_t baudrate, uint8_t rx, uint8_t tx,
 
     if ((handle = (mbus_handle *) malloc(sizeof(mbus_handle))) == NULL)
     {
-        MBUS_ERROR("%s: Failed to allocate handle.\n", __PRETTY_FUNCTION__);
+        ESP_LOGE(TAG, "%s: Failed to allocate handle.\n", __PRETTY_FUNCTION__);
         return NULL;
     }
 
@@ -1534,8 +1534,9 @@ mbus_context_serial(uart_port_t port, uint32_t baudrate, uint8_t rx, uint8_t tx,
     serial_data->config.data_bits = UART_DATA_8_BITS;
     serial_data->config.parity = UART_PARITY_EVEN;
     serial_data->config.stop_bits = UART_STOP_BITS_1;
-    serial_data->config.flow_ctrl = UART_HW_FLOWCTRL_CTS_RTS;   // TODO: What to use?
+    serial_data->config.flow_ctrl = UART_HW_FLOWCTRL_DISABLE;   // TODO: What to use?
     serial_data->config.rx_flow_ctrl_thresh = 122; // TODO: What to use?
+    serial_data->config.source_clk = UART_SCLK_APB;
 
     return handle;
 }
@@ -1562,7 +1563,7 @@ mbus_connect(mbus_handle * handle)
 {
     if (handle == NULL)
     {
-        MBUS_ERROR("%s: Invalid M-Bus handle for disconnect.\n", __PRETTY_FUNCTION__);
+        ESP_LOGE(TAG, "%s: Invalid M-Bus handle for disconnect.\n", __PRETTY_FUNCTION__);
         return -1;
     }
 
@@ -1574,7 +1575,7 @@ mbus_disconnect(mbus_handle * handle)
 {
     if (handle == NULL)
     {
-        MBUS_ERROR("%s: Invalid M-Bus handle for disconnect.\n", __PRETTY_FUNCTION__);
+        ESP_LOGE(TAG, "%s: Invalid M-Bus handle for disconnect.\n", __PRETTY_FUNCTION__);
         return -1;
     }
 
@@ -1586,7 +1587,7 @@ mbus_context_set_option(mbus_handle * handle, mbus_context_option option, long v
 {
     if (handle == NULL)
     {
-        MBUS_ERROR("%s: Invalid M-Bus handle to set option.\n", __PRETTY_FUNCTION__);
+        ESP_LOGE(TAG, "%s: Invalid M-Bus handle to set option.\n", __PRETTY_FUNCTION__);
         return -1;
     }
 
@@ -1627,13 +1628,13 @@ mbus_recv_frame(mbus_handle * handle, mbus_frame *frame)
 
     if (handle == NULL)
     {
-        MBUS_ERROR("%s: Invalid M-Bus handle for receive.\n", __PRETTY_FUNCTION__);
+        ESP_LOGE(TAG, "%s: Invalid M-Bus handle for receive.\n", __PRETTY_FUNCTION__);
         return MBUS_RECV_RESULT_ERROR;
     }
 
     if (frame == NULL)
     {
-        MBUS_ERROR("%s: Invalid frame.\n", __PRETTY_FUNCTION__);
+        ESP_LOGE(TAG, "%s: Invalid frame.\n", __PRETTY_FUNCTION__);
         return MBUS_RECV_RESULT_ERROR;
     }
 
@@ -1686,7 +1687,7 @@ mbus_send_frame(mbus_handle * handle, mbus_frame *frame)
 {
     if (handle == NULL)
     {
-        MBUS_ERROR("%s: Invalid M-Bus handle for send.\n", __PRETTY_FUNCTION__);
+        ESP_LOGE(TAG, "%s: Invalid M-Bus handle for send.\n", __PRETTY_FUNCTION__);
         return 0;
     }
 
@@ -1707,14 +1708,14 @@ mbus_send_select_frame(mbus_handle * handle, const char *secondary_addr_str)
 
     if (mbus_frame_select_secondary_pack(frame, (char*) secondary_addr_str) == -1)
     {
-        MBUS_ERROR("%s: Failed to pack selection mbus frame.\n", __PRETTY_FUNCTION__);
+        ESP_LOGE(TAG, "%s: Failed to pack selection mbus frame.\n", __PRETTY_FUNCTION__);
         mbus_frame_free(frame);
         return -1;
     }
 
     if (mbus_send_frame(handle, frame) == -1)
     {
-        MBUS_ERROR("%s: Failed to send mbus frame.\n", __PRETTY_FUNCTION__);
+        ESP_LOGE(TAG, "%s: Failed to send mbus frame.\n", __PRETTY_FUNCTION__);
         mbus_frame_free(frame);
         return -1;
     }
@@ -1736,7 +1737,7 @@ mbus_send_switch_baudrate_frame(mbus_handle * handle, int address, long baudrate
 
     if (mbus_is_primary_address(address) == 0)
     {
-        MBUS_ERROR("%s: invalid address %d\n", __PRETTY_FUNCTION__, address);
+        ESP_LOGE(TAG, "%s: invalid address %d\n", __PRETTY_FUNCTION__, address);
         return -1;
     }
 
@@ -1767,7 +1768,7 @@ mbus_send_switch_baudrate_frame(mbus_handle * handle, int address, long baudrate
         control_information = MBUS_CONTROL_INFO_SET_BAUDRATE_38400;
         break;
       default:
-        MBUS_ERROR("%s: invalid baudrate %ld\n", __PRETTY_FUNCTION__, baudrate);
+        ESP_LOGE(TAG, "%s: invalid baudrate %ld\n", __PRETTY_FUNCTION__, baudrate);
         return -1;
     }
 
@@ -1775,7 +1776,7 @@ mbus_send_switch_baudrate_frame(mbus_handle * handle, int address, long baudrate
 
     if (frame == NULL)
     {
-        MBUS_ERROR("%s: failed to allocate mbus frame.\n", __PRETTY_FUNCTION__);
+        ESP_LOGE(TAG, "%s: failed to allocate mbus frame.\n", __PRETTY_FUNCTION__);
         return -1;
     }
 
@@ -1785,7 +1786,7 @@ mbus_send_switch_baudrate_frame(mbus_handle * handle, int address, long baudrate
 
     if (mbus_send_frame(handle, frame) == -1)
     {
-        MBUS_ERROR("%s: failed to send mbus frame.\n", __PRETTY_FUNCTION__);
+        ESP_LOGE(TAG, "%s: failed to send mbus frame.\n", __PRETTY_FUNCTION__);
         retval = -1;
     }
 
@@ -1805,13 +1806,13 @@ mbus_send_application_reset_frame(mbus_handle * handle, int address, int subcode
 
     if (mbus_is_primary_address(address) == 0)
     {
-        MBUS_ERROR("%s: invalid address %d\n", __PRETTY_FUNCTION__, address);
+        ESP_LOGE(TAG, "%s: invalid address %d\n", __PRETTY_FUNCTION__, address);
         return -1;
     }
 
     if (subcode > 0xFF)
     {
-        MBUS_ERROR("%s: invalid subcode %d\n", __PRETTY_FUNCTION__, subcode);
+        ESP_LOGE(TAG, "%s: invalid subcode %d\n", __PRETTY_FUNCTION__, subcode);
         return -1;
     }
 
@@ -1819,7 +1820,7 @@ mbus_send_application_reset_frame(mbus_handle * handle, int address, int subcode
 
     if (frame == NULL)
     {
-        MBUS_ERROR("%s: failed to allocate mbus frame.\n", __PRETTY_FUNCTION__);
+        ESP_LOGE(TAG, "%s: failed to allocate mbus frame.\n", __PRETTY_FUNCTION__);
         return -1;
     }
 
@@ -1839,7 +1840,7 @@ mbus_send_application_reset_frame(mbus_handle * handle, int address, int subcode
 
     if (mbus_send_frame(handle, frame) == -1)
     {
-        MBUS_ERROR("%s: failed to send mbus frame.\n", __PRETTY_FUNCTION__);
+        ESP_LOGE(TAG, "%s: failed to send mbus frame.\n", __PRETTY_FUNCTION__);
         retval = -1;
     }
 
@@ -1859,7 +1860,7 @@ mbus_send_request_frame(mbus_handle * handle, int address)
 
     if (mbus_is_primary_address(address) == 0)
     {
-        MBUS_ERROR("%s: invalid address %d\n", __PRETTY_FUNCTION__, address);
+        ESP_LOGE(TAG, "%s: invalid address %d\n", __PRETTY_FUNCTION__, address);
         return -1;
     }
 
@@ -1867,7 +1868,7 @@ mbus_send_request_frame(mbus_handle * handle, int address)
 
     if (frame == NULL)
     {
-        MBUS_ERROR("%s: failed to allocate mbus frame.\n", __PRETTY_FUNCTION__);
+        ESP_LOGE(TAG, "%s: failed to allocate mbus frame.\n", __PRETTY_FUNCTION__);
         return -1;
     }
 
@@ -1876,7 +1877,7 @@ mbus_send_request_frame(mbus_handle * handle, int address)
 
     if (mbus_send_frame(handle, frame) == -1)
     {
-        MBUS_ERROR("%s: failed to send mbus frame.\n", __PRETTY_FUNCTION__);
+        ESP_LOGE(TAG, "%s: failed to send mbus frame.\n", __PRETTY_FUNCTION__);
         retval = -1;
     }
 
@@ -1895,19 +1896,19 @@ mbus_send_user_data_frame(mbus_handle * handle, int address, const unsigned char
 
     if (mbus_is_primary_address(address) == 0)
     {
-        MBUS_ERROR("%s: invalid address %d\n", __PRETTY_FUNCTION__, address);
+        ESP_LOGE(TAG, "%s: invalid address %d\n", __PRETTY_FUNCTION__, address);
         return -1;
     }
 
     if (data == NULL)
     {
-        MBUS_ERROR("%s: Invalid data\n", __PRETTY_FUNCTION__);
+        ESP_LOGE(TAG, "%s: Invalid data\n", __PRETTY_FUNCTION__);
         return -1;
     }
 
     if ((data_size > MBUS_FRAME_DATA_LENGTH) || (data_size == 0))
     {
-        MBUS_ERROR("%s: illegal data_size %zu\n", __PRETTY_FUNCTION__, data_size);
+        ESP_LOGE(TAG, "%s: illegal data_size %zu\n", __PRETTY_FUNCTION__, data_size);
         return -1;
     }
 
@@ -1915,7 +1916,7 @@ mbus_send_user_data_frame(mbus_handle * handle, int address, const unsigned char
 
     if (frame == NULL)
     {
-        MBUS_ERROR("%s: failed to allocate mbus frame.\n", __PRETTY_FUNCTION__);
+        ESP_LOGE(TAG, "%s: failed to allocate mbus frame.\n", __PRETTY_FUNCTION__);
         return -1;
     }
 
@@ -1927,7 +1928,7 @@ mbus_send_user_data_frame(mbus_handle * handle, int address, const unsigned char
 
     if (mbus_send_frame(handle, frame) == -1)
     {
-        MBUS_ERROR("%s: failed to send mbus frame.\n", __PRETTY_FUNCTION__);
+        ESP_LOGE(TAG, "%s: failed to send mbus frame.\n", __PRETTY_FUNCTION__);
         retval = -1;
     }
 
@@ -1946,7 +1947,7 @@ mbus_set_primary_address(mbus_handle * handle, int old_address, int new_address)
 
     if (mbus_is_primary_address(new_address) == 0)
     {
-        MBUS_ERROR("%s: invalid address %d\n", __PRETTY_FUNCTION__, new_address);
+        ESP_LOGE(TAG, "%s: invalid address %d\n", __PRETTY_FUNCTION__, new_address);
         return -1;
     }
 
@@ -1955,7 +1956,7 @@ mbus_set_primary_address(mbus_handle * handle, int old_address, int new_address)
         case MBUS_ADDRESS_NETWORK_LAYER:
         case MBUS_ADDRESS_BROADCAST_REPLY:
         case MBUS_ADDRESS_BROADCAST_NOREPLY:
-            MBUS_ERROR("%s: invalid address %d\n", __PRETTY_FUNCTION__, new_address);
+            ESP_LOGE(TAG, "%s: invalid address %d\n", __PRETTY_FUNCTION__, new_address);
             return -1;
     }
 
@@ -1976,13 +1977,13 @@ mbus_sendrecv_request(mbus_handle *handle, int address, mbus_frame *reply, int m
 
     if (handle == NULL)
     {
-        MBUS_ERROR("%s: Invalid M-Bus handle for request.\n", __PRETTY_FUNCTION__);
+        ESP_LOGE(TAG, "%s: Invalid M-Bus handle for request.\n", __PRETTY_FUNCTION__);
         return 1;
     }
 
     if (mbus_is_primary_address(address) == 0)
     {
-        MBUS_ERROR("%s: invalid address %d\n", __PRETTY_FUNCTION__, address);
+        ESP_LOGE(TAG, "%s: invalid address %d\n", __PRETTY_FUNCTION__, address);
         return 1;
     }
 
@@ -1990,7 +1991,7 @@ mbus_sendrecv_request(mbus_handle *handle, int address, mbus_frame *reply, int m
 
     if (frame == NULL)
     {
-        MBUS_ERROR("%s: failed to allocate mbus frame.\n", __PRETTY_FUNCTION__);
+        ESP_LOGE(TAG, "%s: failed to allocate mbus frame.\n", __PRETTY_FUNCTION__);
         return -1;
     }
 
@@ -2021,39 +2022,43 @@ mbus_sendrecv_request(mbus_handle *handle, int address, mbus_frame *reply, int m
         if (debug)
             printf("%s: debug: sending request frame\n", __PRETTY_FUNCTION__);
 
+        ESP_LOGI(TAG, "Sending frame");
         if (mbus_send_frame(handle, frame) == -1)
         {
-            MBUS_ERROR("%s: failed to send mbus frame.\n", __PRETTY_FUNCTION__);
+            ESP_LOGE(TAG, "%s: failed to send mbus frame.\n", __PRETTY_FUNCTION__);
             retval = -1;
             break;
         }
 
         if (debug)
             printf("%s: debug: receiving response frame #%d\n", __PRETTY_FUNCTION__, frame_count);
-
+        
+        ESP_LOGI(TAG, "Receiving response");
         result = mbus_recv_frame(handle, next_frame);
+        ESP_LOGI(TAG, "Received with code %d", result);
 
         if (result == MBUS_RECV_RESULT_OK)
         {
             retry = 0;
+            ESP_LOGI(TAG, "Puring frames");
             mbus_purge_frames(handle);
         }
         else if (result == MBUS_RECV_RESULT_TIMEOUT)
         {
-            MBUS_ERROR("%s: No M-Bus response frame received.\n", __PRETTY_FUNCTION__);
+            ESP_LOGE(TAG, "%s: No M-Bus response frame received.\n", __PRETTY_FUNCTION__);
             retry++;
             continue;
         }
         else if (result == MBUS_RECV_RESULT_INVALID)
         {
-            MBUS_ERROR("%s: Received invalid M-Bus response frame.\n", __PRETTY_FUNCTION__);
+            ESP_LOGE(TAG, "%s: Received invalid M-Bus response frame.\n", __PRETTY_FUNCTION__);
             retry++;
             mbus_purge_frames(handle);
             continue;
         }
         else
         {
-            MBUS_ERROR("%s: Failed to receive M-Bus response frame.\n", __PRETTY_FUNCTION__);
+            ESP_LOGE(TAG, "%s: Failed to receive M-Bus response frame %d.\n", __PRETTY_FUNCTION__, result);
             retval = 1;
             break;
         }
@@ -2066,7 +2071,7 @@ mbus_sendrecv_request(mbus_handle *handle, int address, mbus_frame *reply, int m
         //
         if (mbus_frame_data_parse(next_frame, &reply_data) == -1)
         {
-            MBUS_ERROR("%s: M-bus data parse error.\n", __PRETTY_FUNCTION__);
+            ESP_LOGE(TAG, "%s: M-bus data parse error.\n", __PRETTY_FUNCTION__);
             retval = 1;
             break;
         }
@@ -2099,7 +2104,7 @@ mbus_sendrecv_request(mbus_handle *handle, int address, mbus_frame *reply, int m
 
                 if (next_frame->next == NULL)
                 {
-                    MBUS_ERROR("%s: failed to allocate mbus frame.\n", __PRETTY_FUNCTION__);
+                    ESP_LOGE(TAG, "%s: failed to allocate mbus frame.\n", __PRETTY_FUNCTION__);
                     retval = -1;
                     more_frames = 0;
                 }
@@ -2139,7 +2144,7 @@ mbus_send_ping_frame(mbus_handle *handle, int address, char purge_response)
 
     if (mbus_is_primary_address(address) == 0)
     {
-        MBUS_ERROR("%s: invalid address %d\n", __PRETTY_FUNCTION__, address);
+        ESP_LOGE(TAG, "%s: invalid address %d\n", __PRETTY_FUNCTION__, address);
         return 1;
     }
 
@@ -2147,7 +2152,7 @@ mbus_send_ping_frame(mbus_handle *handle, int address, char purge_response)
 
     if (frame == NULL)
     {
-        MBUS_ERROR("%s: failed to allocate mbus frame.\n", __PRETTY_FUNCTION__);
+        ESP_LOGE(TAG, "%s: failed to allocate mbus frame.\n", __PRETTY_FUNCTION__);
         return -1;
     }
 
@@ -2156,7 +2161,7 @@ mbus_send_ping_frame(mbus_handle *handle, int address, char purge_response)
 
     if (mbus_send_frame(handle, frame) == -1)
     {
-        MBUS_ERROR("%s: failed to send mbus frame.\n", __PRETTY_FUNCTION__);
+        ESP_LOGE(TAG, "%s: failed to send mbus frame.\n", __PRETTY_FUNCTION__);
         mbus_frame_free(frame);
         return -1;
     }
@@ -2181,14 +2186,14 @@ mbus_select_secondary_address(mbus_handle * handle, const char *mask)
 
     if (mask == NULL || strlen(mask) != 16)
     {
-        MBUS_ERROR("%s: Invalid address masks.\n", __PRETTY_FUNCTION__);
+        ESP_LOGE(TAG, "%s: Invalid address masks.\n", __PRETTY_FUNCTION__);
         return MBUS_PROBE_ERROR;
     }
 
     /* send select command */
     if (mbus_send_select_frame(handle, mask) == -1)
     {
-        MBUS_ERROR("%s: Failed to send selection frame: %s.\n",
+        ESP_LOGE(TAG, "%s: Failed to send selection frame: %s.\n",
                    __PRETTY_FUNCTION__,
                    mbus_error_str());
         return MBUS_PROBE_ERROR;
@@ -2220,7 +2225,7 @@ mbus_select_secondary_address(mbus_handle * handle, const char *mask)
         return MBUS_PROBE_SINGLE;
     }
 
-    MBUS_ERROR("%s: Unexpected reply for address [%s].\n", __PRETTY_FUNCTION__, mask);
+    ESP_LOGE(TAG, "%s: Unexpected reply for address [%s].\n", __PRETTY_FUNCTION__, mask);
 
     return MBUS_PROBE_NOTHING;
 }
@@ -2237,7 +2242,7 @@ mbus_probe_secondary_address(mbus_handle *handle, const char *mask, char *matchi
 
     if (mask == NULL || matching_addr == NULL || strlen(mask) != 16)
     {
-        MBUS_ERROR("%s: Invalid address masks.\n", __PRETTY_FUNCTION__);
+        ESP_LOGE(TAG, "%s: Invalid address masks.\n", __PRETTY_FUNCTION__);
         return MBUS_PROBE_ERROR;
     }
 
@@ -2250,7 +2255,7 @@ mbus_probe_secondary_address(mbus_handle *handle, const char *mask, char *matchi
             /* send a data request command to find out the full address */
             if (mbus_send_request_frame(handle, MBUS_ADDRESS_NETWORK_LAYER) == -1)
             {
-                MBUS_ERROR("%s: Failed to send request to selected secondary device [mask %s]: %s.\n",
+                ESP_LOGE(TAG, "%s: Failed to send request to selected secondary device [mask %s]: %s.\n",
                            __PRETTY_FUNCTION__,
                            mask,
                            mbus_error_str());
@@ -2285,7 +2290,7 @@ mbus_probe_secondary_address(mbus_handle *handle, const char *mask, char *matchi
                 if (addr == NULL)
                 {
                     // show error message, but procede with scan
-                    MBUS_ERROR("Failed to generate secondary address from M-Bus reply frame: %s\n",
+                    ESP_LOGE(TAG, "Failed to generate secondary address from M-Bus reply frame: %s\n",
                                mbus_error_str());
                     return MBUS_PROBE_NOTHING;
                 }
@@ -2301,7 +2306,7 @@ mbus_probe_secondary_address(mbus_handle *handle, const char *mask, char *matchi
             }
             else
             {
-                MBUS_ERROR("%s: Unexpected reply for address [mask %s]. Expected long frame.\n",
+                ESP_LOGE(TAG, "%s: Unexpected reply for address [mask %s]. Expected long frame.\n",
                            __PRETTY_FUNCTION__, mask);
                 return MBUS_PROBE_NOTHING;
             }
@@ -2321,7 +2326,7 @@ int mbus_read_slave(mbus_handle * handle, mbus_address *address, mbus_frame * re
 {
     if (handle == NULL || address == NULL)
     {
-        MBUS_ERROR("%s: Invalid handle or address.\n", __PRETTY_FUNCTION__);
+        ESP_LOGE(TAG, "%s: Invalid handle or address.\n", __PRETTY_FUNCTION__);
         return -1;
     }
 
@@ -2329,7 +2334,7 @@ int mbus_read_slave(mbus_handle * handle, mbus_address *address, mbus_frame * re
     {
         if (mbus_send_request_frame(handle, address->primary) == -1)
         {
-            MBUS_ERROR("%s: Failed to send M-Bus request frame.\n",
+            ESP_LOGE(TAG, "%s: Failed to send M-Bus request frame.\n",
                        __PRETTY_FUNCTION__);
             return -1;
         }
@@ -2341,7 +2346,7 @@ int mbus_read_slave(mbus_handle * handle, mbus_address *address, mbus_frame * re
 
         if (address->secondary == NULL)
         {
-            MBUS_ERROR("%s: Secondary address not set.\n",
+            ESP_LOGE(TAG, "%s: Secondary address not set.\n",
                        __PRETTY_FUNCTION__);
             return -1;
         }
@@ -2350,21 +2355,21 @@ int mbus_read_slave(mbus_handle * handle, mbus_address *address, mbus_frame * re
 
         if (probe_ret == MBUS_PROBE_COLLISION)
         {
-            MBUS_ERROR("%s: The address mask [%s] matches more than one device.\n",
+            ESP_LOGE(TAG, "%s: The address mask [%s] matches more than one device.\n",
                        __PRETTY_FUNCTION__,
                        address->secondary);
             return -1;
         }
         else if (probe_ret == MBUS_PROBE_NOTHING)
         {
-            MBUS_ERROR("%s: The selected secondary address [%s] does not match any device.\n",
+            ESP_LOGE(TAG, "%s: The selected secondary address [%s] does not match any device.\n",
                        __PRETTY_FUNCTION__,
                        address->secondary);
             return -1;
         }
         else if (probe_ret == MBUS_PROBE_ERROR)
         {
-            MBUS_ERROR("%s: Failed to probe secondary address [%s].\n",
+            ESP_LOGE(TAG, "%s: Failed to probe secondary address [%s].\n",
                        __PRETTY_FUNCTION__,
                        address->secondary);
             return -1;
@@ -2373,7 +2378,7 @@ int mbus_read_slave(mbus_handle * handle, mbus_address *address, mbus_frame * re
 
         if (mbus_send_request_frame(handle, MBUS_ADDRESS_NETWORK_LAYER) == -1)
         {
-            MBUS_ERROR("%s: Failed to send M-Bus request frame.\n",
+            ESP_LOGE(TAG, "%s: Failed to send M-Bus request frame.\n",
                        __PRETTY_FUNCTION__);
             return -1;
         }
@@ -2381,7 +2386,7 @@ int mbus_read_slave(mbus_handle * handle, mbus_address *address, mbus_frame * re
 
     if (mbus_recv_frame(handle, reply) != 0)
     {
-        MBUS_ERROR("%s: Failed to receive M-Bus response frame.\n",
+        ESP_LOGE(TAG, "%s: Failed to receive M-Bus response frame.\n",
                    __PRETTY_FUNCTION__);
         return -1;
     }
@@ -2400,13 +2405,13 @@ mbus_scan_2nd_address_range(mbus_handle * handle, int pos, char *addr_mask)
 
     if (handle == NULL || addr_mask == NULL)
     {
-        MBUS_ERROR("%s: Invalid handle or address mask.\n", __PRETTY_FUNCTION__);
+        ESP_LOGE(TAG, "%s: Invalid handle or address mask.\n", __PRETTY_FUNCTION__);
         return -1;
     }
 
     if (strlen(addr_mask) != 16)
     {
-        MBUS_ERROR("%s: Illegal address mask [%s]. Not 16 characters long.\n", __PRETTY_FUNCTION__, addr_mask);
+        ESP_LOGE(TAG, "%s: Illegal address mask [%s]. Not 16 characters long.\n", __PRETTY_FUNCTION__, addr_mask);
         return -1;
     }
 
@@ -2417,7 +2422,7 @@ mbus_scan_2nd_address_range(mbus_handle * handle, int pos, char *addr_mask)
 
     if ((mask = strdup(addr_mask)) == NULL)
     {
-        MBUS_ERROR("%s: Failed to allocate local copy of the address mask.\n", __PRETTY_FUNCTION__);
+        ESP_LOGE(TAG, "%s: Failed to allocate local copy of the address mask.\n", __PRETTY_FUNCTION__);
         return -1;
     }
 
@@ -2472,7 +2477,7 @@ mbus_scan_2nd_address_range(mbus_handle * handle, int pos, char *addr_mask)
             }
             else // MBUS_PROBE_ERROR
             {
-                MBUS_ERROR("%s: Failed to probe secondary address [%s].\n", __PRETTY_FUNCTION__, mask);
+                ESP_LOGE(TAG, "%s: Failed to probe secondary address [%s].\n", __PRETTY_FUNCTION__, mask);
                 return -1;
             }
         }
