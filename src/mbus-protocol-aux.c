@@ -1087,7 +1087,7 @@ mbus_embedded_vif_unit_normalize(int vif, double value, double *value_out, mbus_
     }
 
     ESP_LOGE(TAG, "%s: Unknown VIF 0x%03X\n", __PRETTY_FUNCTION__, newVif);
-    *type_out = MBUS_EMBEDDED_TYPE_UNKNOWN;
+    *type_out = MBUS_TYPE_NOT_DEFINED;
     *value_out = 0.0;
     return -1;
 }
@@ -1236,8 +1236,8 @@ mbus_embedded_vib_unit_normalize(mbus_value_information_block *vib, double value
                  (vib->vif == 0xFC))
         {
             // custom VIF
-            *unit_out = strdup("-");
-            *quantity_out = strdup((const char *) vib->custom_vif);
+            // TODO: which type??
+            *type_out = MBUS_TYPE_NOT_DEFINED;
             *value_out = value;
         }
         else
@@ -1656,7 +1656,7 @@ mbus_embedded_record * mbus_embedded_parse_variable_record(mbus_data_record *dat
 
 // It allocs multiple of 5 records until no more records are present. Remember that the size of the array of records pointer is always a multiple of 5 in size!!!!
 // It returns the number of actual (not NULL) found records.
-int16_t *mbus_embedded_data_variable_normalized(mbus_data_variable *data, mbus_embedded_record **records_out)
+int16_t mbus_embedded_data_variable_normalized(mbus_data_variable *data, mbus_embedded_record **records_out)
 {
     mbus_data_record *record;
     mbus_embedded_record *norm_record;

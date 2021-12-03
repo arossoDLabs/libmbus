@@ -90,7 +90,7 @@ typedef enum {
     MBUS_TYPE_S_ONTIME,
     MBUS_TYPE_S_OPERATINGTIME,
     MBUS_TYPE_W_POWER,
-    MBUS_TYPE_JH_POWER
+    MBUS_TYPE_JH_POWER,
     MBUS_TYPE_M3H_VOLUMEFLOW,
     MBUS_TYPE_M3MIN_VOLUMEFLOW,
     MBUS_TYPE_M3SEC_VOLUMEFLOW,
@@ -99,7 +99,7 @@ typedef enum {
     MBUS_TYPE_C_RETURNTEMPERATURE,
     MBUS_TYPE_C_EXTERNALTEMPERATURE,
     MBUS_TYPE_K_TEMPERATUREDIFFERENCE,
-    MBUS_TYPE_BAR_PRESSURE,
+    MBUS_TYPE_BAR_PRESSURE
     // TODO: complete list
 } mbus_embedded_type;
 
@@ -170,7 +170,7 @@ typedef struct _mbus_record {
     long                storage_number; /**< Quantity storage number */
 } mbus_record;
 
-typedef struct _mbus_record {
+typedef struct _mbus_embedded_record {
     mbus_value value;          /**< Quantity value */
     char                is_numeric;      /**< Quantity value type (nonzero is numeric) */
     mbus_embedded_type  type;           /**< Quantity type */
@@ -518,7 +518,7 @@ char * mbus_data_variable_xml_normalized(mbus_data_variable *data);
  *
  * @return the number of actual (not NULL) found records. (may differ from array size!!)
  */
-int16_t *mbus_embedded_data_variable_normalized(mbus_data_variable *data, mbus_embedded_record **records_out);
+int16_t mbus_embedded_data_variable_normalized(mbus_data_variable *data, mbus_embedded_record **records_out);
 
 /**
  * Return a string containing an XML representation of the normalized M-BUS frame data.
