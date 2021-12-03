@@ -81,6 +81,28 @@ extern "C" {
 #define MBUS_FRAME_PURGE_M2S  1
 #define MBUS_FRAME_PURGE_NONE 0
 
+typedef enum {
+    MBUS_TYPE_NOT_DEFINED = 0,
+    MBUS_TYPE_WH_ENERGY,
+    MBUS_TYPE_J_ENERGY,
+    MBUS_TYPE_M3_VOLUME,
+    MBUS_TYPE_KG_MASS,
+    MBUS_TYPE_S_ONTIME,
+    MBUS_TYPE_S_OPERATINGTIME,
+    MBUS_TYPE_W_POWER,
+    MBUS_TYPE_JH_POWER
+    MBUS_TYPE_M3H_VOLUMEFLOW,
+    MBUS_TYPE_M3MIN_VOLUMEFLOW,
+    MBUS_TYPE_M3SEC_VOLUMEFLOW,
+    MBUS_TYPE_KGH_MASSFLOW,
+    MBUS_TYPE_C_FLOWTEMPERATURE,
+    MBUS_TYPE_C_RETURNTEMPERATURE,
+    MBUS_TYPE_C_EXTERNALTEMPERATURE,
+    MBUS_TYPE_K_TEMPERATUREDIFFERENCE,
+    MBUS_TYPE_BAR_PRESSURE,
+    // TODO: complete list
+} mbus_embedded_type;
+
 /**
  * Unified MBus handle type encapsulating either Serial or TCP gateway.
  */
@@ -147,6 +169,15 @@ typedef struct _mbus_record {
     long                tariff;         /**< Quantity tariff */
     long                storage_number; /**< Quantity storage number */
 } mbus_record;
+
+typedef struct _mbus_record {
+    mbus_value value;          /**< Quantity value */
+    char                is_numeric;      /**< Quantity value type (nonzero is numeric) */
+    mbus_embedded_type  type;           /**< Quantity type */
+    int                 device;         /**< Quantity device */
+    long                tariff;         /**< Quantity tariff */
+    long                storage_number; /**< Quantity storage number */
+} mbus_embedded_record;
 
 /**
  * MBus handle option enumeration
@@ -476,6 +507,18 @@ int mbus_vib_unit_normalize(mbus_value_information_block *vib, double value, cha
  * @return string with XML
  */
 char * mbus_data_variable_xml_normalized(mbus_data_variable *data);
+
+
+/**
+ * Generate a list of pointers to embedded data records containing the information needed.
+ * 
+ * It allocs multiple of 5 records until no more records are present. Remember that the size of the array of records pointer is always a multiple of 5 in size!!!!
+ *
+ * @param data    variable-length data, pointer to the array of record pointers
+ *
+ * @return the number of actual (not NULL) found records. (may differ from array size!!)
+ */
+int16_t *mbus_embedded_data_variable_normalized(mbus_data_variable *data, mbus_embedded_record **records_out);
 
 /**
  * Return a string containing an XML representation of the normalized M-BUS frame data.
