@@ -1801,6 +1801,24 @@ mbus_frame_data_xml_normalized(mbus_frame_data *data)
     return NULL;
 }
 
+int16_t mbus_embedded_frame_data_normalized(mbus_frame_data *data, mbus_embedded_record **records_out)
+{
+    if (data)
+    {
+        if (data->type == MBUS_DATA_TYPE_FIXED)
+        {
+            return -1;  // TODO: fixed data
+        }
+
+        if (data->type == MBUS_DATA_TYPE_VARIABLE)
+        {
+            return mbus_embedded_data_variable_normalized(&(data->data_var), records_out);
+        }
+    }
+
+    return NULL;
+}
+
 mbus_handle *
 mbus_context_serial(uart_port_t port, uint32_t baudrate, uint8_t rx, uint8_t tx, int8_t rts, int8_t cts)
 {

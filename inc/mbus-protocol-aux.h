@@ -529,6 +529,8 @@ int16_t mbus_embedded_data_variable_normalized(mbus_data_variable *data, mbus_em
  */
 char * mbus_frame_data_xml_normalized(mbus_frame_data *data);
 
+int16_t mbus_embedded_frame_data_normalized(mbus_frame_data *data, mbus_embedded_record **records_out);
+
 /**
  * Iterate over secondary addresses, send a probe package to all addresses matching
  * the given addresses mask.
