@@ -22,6 +22,8 @@
 
 #define TAG "MBUS_AUX"
 
+#define _DEBUG_
+
 #ifdef _DEBUG_
 #define MBUS_DEBUG(...) fprintf (stderr, __VA_ARGS__)
 #else
@@ -1639,6 +1641,7 @@ mbus_embedded_record * mbus_embedded_parse_variable_record(mbus_data_record *dat
 
         if (value_out_str != NULL)
         {
+            MBUS_DEBUG("is string = %.*s \n", value_out_str_size, value_out_str);
             record->is_numeric = 0;
             (record->value).str_val.value = value_out_str;
             (record->value).str_val.size = value_out_str_size;
@@ -1656,27 +1659,28 @@ mbus_embedded_record * mbus_embedded_parse_variable_record(mbus_data_record *dat
 
 // It allocs multiple of 5 records until no more records are present. Remember that the size of the array of records pointer is always a multiple of 5 in size!!!!
 // It returns the number of actual (not NULL) found records.
-int16_t mbus_embedded_data_variable_normalized(mbus_data_variable *data, mbus_embedded_record **records_out)
+int16_t mbus_embedded_data_variable_normalized(mbus_data_variable *data, mbus_embedded_record ***records_out)
 {
     mbus_data_record *record;
     mbus_embedded_record *norm_record;
-    int16_t i = -1, alloc = 5;
+    int16_t i = -1, alloc = data->nrecords;
 
-    *records_out = malloc(sizeof(mbus_embedded_record) * 5);
+    *records_out = malloc(sizeof(mbus_embedded_record*) * data->nrecords);
 
     if (data)
     {
-        for (record = data->record, i = 0; record; record = record->next, i++)
+        for (record = data->record, i = 0; record != NULL; record = record->next, i++)
         {
             norm_record = mbus_embedded_parse_variable_record(record);
-            if (norm_record)
+            if (norm_record != NULL)
             {
                 if (i >= alloc)
                 {
                     alloc += 5;
-                    *records_out = realloc(records_out, sizeof(mbus_embedded_record) * alloc);
+                    *records_out = realloc(*records_out, sizeof(mbus_embedded_record*) * alloc);
+                    ESP_LOGW(TAG, "REALLOCATING");
                 }
-                records_out[i] = norm_record;
+                (*records_out)[i] = norm_record;    
             }
         }
     }
@@ -1801,7 +1805,7 @@ mbus_frame_data_xml_normalized(mbus_frame_data *data)
     return NULL;
 }
 
-int16_t mbus_embedded_frame_data_normalized(mbus_frame_data *data, mbus_embedded_record **records_out)
+int16_t mbus_embedded_frame_data_normalized(mbus_frame_data *data, mbus_embedded_record ***records_out)
 {
     if (data)
     {
