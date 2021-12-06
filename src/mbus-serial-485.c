@@ -201,6 +201,8 @@ mbus_serial_send_frame(mbus_handle *handle, mbus_frame *frame)
     printf("\n");
 #endif
     ESP_LOGI(TAG, "Sending it...");
+    // Flush rx buffer before sending
+    uart_flush(serial_data->port);
     if ((ret = uart_write_bytes(serial_data->port, buff, len)) == len)
     {
         ESP_LOGI(TAG, "Sent %d", ret);

@@ -420,6 +420,9 @@ mbus_record * mbus_record_new();
  */
 void mbus_record_free(mbus_record *rec);
 
+mbus_embedded_record * mbus_embedded_record_new();
+void mbus_embedded_record_free(mbus_embedded_record * rec);
+
 
 /**
  * Create/parse single counter from the fixed data structure
