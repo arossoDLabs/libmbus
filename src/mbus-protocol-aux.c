@@ -1602,7 +1602,7 @@ mbus_embedded_record * mbus_embedded_parse_variable_record(mbus_data_record *dat
         else
         {
             record->is_numeric = 1;
-            (record->value).real_val = real_val;
+            (record->value).real_val = value_out_real;
         }
     }
     else
