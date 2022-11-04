@@ -221,6 +221,43 @@ mbus_serial_send_frame(mbus_handle *handle, mbus_frame *frame)
     return 0;
 }
 
+uint32_t mbus_serial_send_raw(mbus_handle *handle, uint8_t *buff, size_t len) {
+    uint32_t ret;
+    mbus_serial_data *serial_data;
+    ESP_LOGI(TAG, "Send frame");
+    if (handle == NULL || buff == NULL)
+        return -1;
+
+    serial_data = (mbus_serial_data *) handle->auxdata;
+    if (serial_data == NULL)
+        return -1;
+
+    // Make sure serial connection is open
+    if (!uart_is_driver_installed(serial_data->port))
+    {
+       return -1;
+    }
+
+    // Flush rx buffer before sending
+    uart_flush(serial_data->port);
+    if ((ret = uart_write_bytes(serial_data->port, buff, len)) == len)
+    {
+        ESP_LOGI(TAG, "Sent %d", ret);
+        //
+        // call the send event function, if the callback function is registered
+        //
+        if (handle->send_event)
+                handle->send_event(MBUS_HANDLE_TYPE_SERIAL, (const char*) buff, len);
+    }
+    else
+    {
+        ESP_LOGE(TAG, "%s: Failed to write frame to socket (ret = %d: %s)\n", __PRETTY_FUNCTION__, ret, strerror(errno));
+        return -1;
+    }
+
+    return 0;
+}
+
 //------------------------------------------------------------------------------
 //
 //------------------------------------------------------------------------------

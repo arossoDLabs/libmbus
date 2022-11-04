@@ -43,6 +43,7 @@ typedef struct _mbus_serial_data
 uint32_t  mbus_serial_connect(mbus_handle *handle);
 uint32_t  mbus_serial_disconnect(mbus_handle *handle);
 uint32_t  mbus_serial_send_frame(mbus_handle *handle, mbus_frame *frame);
+uint32_t  mbus_serial_send_raw(mbus_handle *handle, uint8_t *buff, size_t len);
 uint32_t  mbus_serial_recv_frame(mbus_handle *handle, mbus_frame *frame);
 uint32_t  mbus_serial_set_baudrate(mbus_handle *handle, uint32_t baudrate);
 void mbus_serial_data_free(mbus_handle *handle);
